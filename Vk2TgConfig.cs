@@ -1,23 +1,21 @@
-﻿using System.IO;
-using System.Threading.Tasks;
-using YamlDotNet.Serialization;
+﻿using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace Vk2Tg
 {
-    public class Config
+    public class Vk2TgConfig
     {
         public string VkToken { get; set; }
         public ulong VkGroupId { get; set; }
         public string TelegramToken { get; set; }
         public long TelegramChatId { get; set; }
 
-        public static async Task<Config> FromYaml(string configPath)
+        public static async Task<Vk2TgConfig> FromYaml(string configPath)
         {
             var deserializer = new DeserializerBuilder()
                 .WithNamingConvention(PascalCaseNamingConvention.Instance) 
                 .Build();
-            return deserializer.Deserialize<Config>(await File.ReadAllTextAsync(configPath));
+            return deserializer.Deserialize<Vk2TgConfig>(await File.ReadAllTextAsync(configPath));
         }
     }
 }

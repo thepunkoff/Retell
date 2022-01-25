@@ -8,7 +8,7 @@ namespace Vk2Tg
     {
         public static async Task Main()
         {
-            var config = await Config.FromYaml(Path.Combine(Environment.CurrentDirectory, "config.yml"));
+            var config = await Vk2TgConfig.FromYaml(Path.Combine(Environment.CurrentDirectory, "config.yml"));
             var bot = new Vk2TgBot(config);
             await bot.Initialize();
             await bot.Run();
