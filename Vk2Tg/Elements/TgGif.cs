@@ -4,23 +4,20 @@ using Telegram.Bot.Types.InputFiles;
 
 namespace Vk2Tg.Elements;
 
+// TODO: gif - расширение photo (или назвать как-то по другому то, что у них общее (всё, кроме способа получения ресурса))
 public class TgGif : TgElement
 {
-    private readonly bool _captionsHasHtml;
-    private readonly bool _forceHtmlGif;
+    private readonly bool _textUp;
 
     public Uri Url { get; }
 
     public string? Caption { get; set; }
-
-    public override Type[] Mergeables { get; }
     
-    public TgGif(Uri url, string? caption = null, bool captionsHasHtml = false, bool forceHtmlGif = false)
+    public TgGif(Uri url, string? caption = null, bool textUp = false)
     {
         Url = url;
         Caption = caption;
-        _captionsHasHtml = captionsHasHtml;
-        _forceHtmlGif = forceHtmlGif;
+        _textUp = textUp;
     }
 
     public override TgElement AddText(TgText text)
@@ -30,28 +27,34 @@ public class TgGif : TgElement
 
     public override TgElement AddPhoto(TgPhoto photo)
     {
+        if (photo.Caption is not null)
+            throw new NotSupportedException("Adding non null caption when merging gif is not supported.");
+        
         if (Caption is null)
-            return new TgCompoundElement(this, photo);
+            return new TgCompoundElement(photo, this);
 
         if (Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
-            return new TgCompoundElement(new TgGif(Url, Caption, forceHtmlGif: true), photo);
+            return new TgCompoundElement(new TgPhoto(photo.Url, Caption, textUp: true), new TgGif(Url));
 
         return Caption.Length <= 1024
-            ? new TgCompoundElement(new TgGif(Url), new TgPhoto(Url, Caption))
-            : new TgCompoundElement(this, photo);
+            ? new TgCompoundElement(photo, this)
+            : new TgCompoundElement(new TgPhoto(photo.Url, Caption), new TgGif(Url));
     }
 
     public override TgElement AddVideo(TgVideo video)
     {
+        if (video.Caption is not null)
+            throw new NotSupportedException("Adding non null caption when merging gif is not supported.");
+        
         if (Caption is null)
-            return new TgCompoundElement(this, video);
+            return new TgCompoundElement(video, this);
 
         if (Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
-            return new TgCompoundElement(new TgGif(Url, Caption, forceHtmlGif: true), video);
+            return new TgCompoundElement(new TgVideo(video.Url, Caption, textUp: true), new TgGif(Url));
 
         return Caption.Length <= 1024
-            ? new TgCompoundElement(new TgGif(Url), new TgVideo(Url, Caption))
-            : new TgCompoundElement(this, video);
+            ? new TgCompoundElement(video, this)
+            : new TgCompoundElement(new TgVideo(video.Url, Caption), new TgGif(Url));
     }
 
     public override TgElement AddPoll(TgPoll poll)
@@ -66,6 +69,9 @@ public class TgGif : TgElement
 
     public override TgElement AddGif(TgGif gif)
     {
+        if (gif.Caption is not null)
+            throw new NotSupportedException("Adding non null caption when merging gif is not supported.");
+        
         if (Caption is null || Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
             return new TgCompoundElement(this, gif);
 
@@ -76,11 +82,11 @@ public class TgGif : TgElement
 
     public override async Task Render(TgRenderContext context, CancellationToken token)
     {
-        if (!_forceHtmlGif && (Caption is null || Caption.Length <= 1024))
+        if (!_textUp && (Caption is null || Caption.Length <= 1024))
         {
             var inputOnlineFile = new InputOnlineFile(Url);
             await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
-                async t => await context.BotClient.SendDocumentAsync(context.ChatId, inputOnlineFile, caption: Caption, cancellationToken: t, parseMode: _captionsHasHtml ? ParseMode.Html : null),
+                async t => await context.BotClient.SendDocumentAsync(context.ChatId, inputOnlineFile, caption: Caption, cancellationToken: t),
                 token);
         }
         else
@@ -90,5 +96,17 @@ public class TgGif : TgElement
                 async t => await context.BotClient.SendTextMessageAsync(context.ChatId,  gifHtml + Caption, cancellationToken: t, parseMode: ParseMode.Html),
                 token);
         }
+    }
+
+    public override DebugRenderToken[] DebugRender()
+    {
+        if (Caption is null)
+            return new[] { new DebugRenderToken(DebugRenderTokenType.Gif) };
+
+        return _textUp
+            ? new[] { new DebugRenderToken(DebugRenderTokenType.TextWithHtmlGif) }
+            : Caption.Length <= 1024
+                ? new[] { new DebugRenderToken(DebugRenderTokenType.GifWithCaption) }
+                : new[] { new DebugRenderToken(DebugRenderTokenType.TextWithHtmlGif) };
     }
 }

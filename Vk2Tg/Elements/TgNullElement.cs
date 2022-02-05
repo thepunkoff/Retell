@@ -2,16 +2,6 @@
 
 public class TgNullElement : TgElement
 {
-    public override Type[] Mergeables { get; } =
-    {
-        typeof(TgText),
-        typeof(TgPhoto),
-        typeof(TgVideo),
-        typeof(TgMediaGroup),
-        typeof(TgPoll),
-        typeof(TgNullElement),
-    };
-
     public override TgElement AddText(TgText text) => text;
 
     public override TgElement AddPhoto(TgPhoto photo) => photo;
@@ -27,5 +17,10 @@ public class TgNullElement : TgElement
     {
         Console.WriteLine("Null element was rendered!");
         return Task.CompletedTask;
+    }
+
+    public override DebugRenderToken[] DebugRender()
+    {
+        throw new NotImplementedException();
     }
 }

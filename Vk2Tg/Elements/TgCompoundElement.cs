@@ -6,8 +6,8 @@
 /// </summary>
 public class TgCompoundElement : TgElement
 {
-    private TgElement _first;
-    private TgElement _second;
+    private readonly TgElement _first;
+    private readonly TgElement _second;
 
     public TgCompoundElement(TgElement first, TgElement second)
     {
@@ -15,42 +15,34 @@ public class TgCompoundElement : TgElement
         _second = second;
     }
 
-    public override Type[] Mergeables => throw new InvalidOperationException();
-
     public override TgElement AddText(TgText text)
     {
-        _first = _first.AddText(text);
-        return this;
+        return new TgCompoundElement(_first.AddText(text), _second);
     }
 
     public override TgElement AddPhoto(TgPhoto photo)
     {
-        _first = _first.AddPhoto(photo);
-        return this;
+        return new TgCompoundElement(_first.AddPhoto(photo), _second);
     }
 
     public override TgElement AddVideo(TgVideo video)
     {
-        _first = _first.AddVideo(video);
-        return this;
+        return new TgCompoundElement(_first.AddVideo(video), _second);
     }
 
     public override TgElement AddPoll(TgPoll poll)
     {
-        _second = _second.AddPoll(poll);
-        return this;
+        return new TgCompoundElement(_first.AddPoll(poll), _second);
     }
 
     public override TgElement AddLink(TgLink link)
     {
-        _second = _second.AddLink(link);
-        return this;
+        return new TgCompoundElement(_first.AddLink(link), _second);
     }
 
     public override TgElement AddGif(TgGif gif)
     {
-        _first = _first.AddGif(gif);
-        return this;
+        return new TgCompoundElement(_first.AddGif(gif), _second);
     }
 
 
@@ -58,5 +50,10 @@ public class TgCompoundElement : TgElement
     {
         await _first.Render(context, token);
         await _second.Render(context, token);
+    }
+
+    public override DebugRenderToken[] DebugRender()
+    {
+        return _first.DebugRender().Concat(_second.DebugRender()).ToArray();
     }
 }

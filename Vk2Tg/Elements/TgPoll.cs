@@ -9,11 +9,6 @@ public class TgPoll : TgElement
     public readonly string[] Options;
     public readonly bool AllowMultipleOptions;
 
-    public override Type[] Mergeables { get; } =
-    {
-        typeof(TgNullElement),
-    };
-
     public override TgElement AddText(TgText text)
     {
         return new TgPoll(text.Text == Question ? Question : Question + "\n\n" + text.Text, Options, AllowMultipleOptions);
@@ -56,5 +51,10 @@ public class TgPoll : TgElement
         await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
             async t => await context.BotClient.SendPollAsync(context.ChatId, Question, Options, true, PollType.Regular, AllowMultipleOptions, cancellationToken: t),
             token);
+    }
+
+    public override DebugRenderToken[] DebugRender()
+    {
+        throw new NotImplementedException();
     }
 }

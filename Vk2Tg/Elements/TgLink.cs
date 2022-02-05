@@ -11,8 +11,6 @@ public class TgLink : TgElement
         Link = link;
     }
 
-    public override Type[] Mergeables { get; }
-
     public override TgElement AddText(TgText text)
     {
         return new TgText(Link + "\n\n" + text.Text);
@@ -48,5 +46,10 @@ public class TgLink : TgElement
         await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
             async t => await context.BotClient.SendTextMessageAsync(context.ChatId, Link, cancellationToken: t),
             token);
+    }
+
+    public override DebugRenderToken[] DebugRender()
+    {
+        throw new NotImplementedException();
     }
 }

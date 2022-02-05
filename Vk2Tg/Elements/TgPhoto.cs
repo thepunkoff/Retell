@@ -6,29 +6,18 @@ namespace Vk2Tg.Elements;
 
 public class TgPhoto : TgElement, IMediaGroupElement
 {
-    private readonly bool _captionsHasHtml;
-    private readonly bool _forceHtmlPhoto;
+    private readonly bool _textUp;
 
     public Uri Url { get; }
     public string? Caption { get; set; }
 
     public MediumType Type => MediumType.Photo;
-
-    public override Type[] Mergeables { get; } =
-    {
-        typeof(TgText),
-        typeof(TgPhoto),
-        typeof(TgVideo),
-        typeof(TgNullElement),
-        typeof(TgMediaGroup),
-    };
     
-    public TgPhoto(Uri url, string? caption = null, bool captionsHasHtml = false, bool forceHtmlPhoto = false)
+    public TgPhoto(Uri url, string? caption = null, bool textUp = false)
     {
         Url = url;
         Caption = caption;
-        _captionsHasHtml = captionsHasHtml;
-        _forceHtmlPhoto = forceHtmlPhoto;
+        _textUp = textUp;
     }
 
     public override TgElement AddText(TgText text)
@@ -38,12 +27,12 @@ public class TgPhoto : TgElement, IMediaGroupElement
 
     public override TgElement AddPhoto(TgPhoto photo)
     {
-        return new TgMediaGroup(new[] { (IMediaGroupElement)this, photo });
+        return new TgMediaGroup(new[] { (IMediaGroupElement)this, photo }, _textUp);
     }
 
     public override TgElement AddVideo(TgVideo video)
     {
-        return new TgMediaGroup(new[] { (IMediaGroupElement)this, video });
+        return new TgMediaGroup(new[] { (IMediaGroupElement)this, video }, _textUp);
     }
 
     public override TgElement AddPoll(TgPoll poll)
@@ -58,11 +47,14 @@ public class TgPhoto : TgElement, IMediaGroupElement
 
     public override TgElement AddGif(TgGif gif)
     {
+        if (gif.Caption is not null)
+            throw new NotSupportedException("Adding non null caption when merging gif is not supported.");
+        
         if (Caption is null)
             return new TgCompoundElement(this, gif);
 
         if (Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
-            return new TgCompoundElement(new TgPhoto(Url, Caption, forceHtmlPhoto: true), gif);
+            return new TgCompoundElement(new TgPhoto(Url, Caption, textUp: true), gif);
 
         return Caption.Length <= 1024
             ? new TgCompoundElement(new TgPhoto(Url), new TgGif(gif.Url, Caption))
@@ -71,11 +63,11 @@ public class TgPhoto : TgElement, IMediaGroupElement
 
     public override async Task Render(TgRenderContext context, CancellationToken token)
     {
-        if (!_forceHtmlPhoto && (Caption is null || Caption.Length <= 1024))
+        if (!_textUp && (Caption is null || Caption.Length <= 1024))
         {
             var inputOnlineFile = new InputOnlineFile(Url);
             await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
-                async t => await context.BotClient.SendPhotoAsync(context.ChatId, inputOnlineFile, Caption, cancellationToken: t, parseMode: _captionsHasHtml ? ParseMode.Html : null),
+                async t => await context.BotClient.SendPhotoAsync(context.ChatId, inputOnlineFile, Caption, cancellationToken: t),
                 token);
         }
         else
@@ -85,5 +77,17 @@ public class TgPhoto : TgElement, IMediaGroupElement
                 async t => await context.BotClient.SendTextMessageAsync(context.ChatId,  picHtml + Caption, cancellationToken: t, parseMode: ParseMode.Html),
                 token);
         }
+    }
+
+    public override DebugRenderToken[] DebugRender()
+    {
+        if (Caption is null)
+            return new[] { new DebugRenderToken(DebugRenderTokenType.Photo) };
+
+        return _textUp
+            ? new[] { new DebugRenderToken(DebugRenderTokenType.TextWithHtmlPhoto) }
+            : Caption.Length <= 1024
+                ? new[] { new DebugRenderToken(DebugRenderTokenType.PhotoWithCaption) }
+                : new[] { new DebugRenderToken(DebugRenderTokenType.TextWithHtmlPhoto) };
     }
 }

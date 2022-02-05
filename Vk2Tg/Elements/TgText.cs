@@ -7,15 +7,6 @@ public class TgText : TgElement
 {
     public readonly string Text;
     private readonly bool _hasHtml;
-
-    public override Type[] Mergeables { get; } =
-    {
-        typeof(TgText),
-        typeof(TgPhoto),
-        typeof(TgVideo),
-        typeof(TgNullElement),
-        typeof(TgMediaGroup),
-    };
     
     public TgText(string text)
     {
@@ -57,5 +48,14 @@ public class TgText : TgElement
         await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
             async t => await context.BotClient.SendTextMessageAsync(context.ChatId, Text, cancellationToken: t, parseMode: _hasHtml ? ParseMode.Html : null),
             token);
+    }
+
+    public override DebugRenderToken[] DebugRender()
+    {
+        var token = Text.Length <= 1024
+            ? new DebugRenderToken(DebugRenderTokenType.ShortText)
+            : new DebugRenderToken(DebugRenderTokenType.LongText);
+
+        return new[] { token };
     }
 }

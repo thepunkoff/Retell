@@ -8,37 +8,33 @@ namespace Vk2Tg.Elements;
 public class TgMediaGroup : TgElement
 {
     private readonly List<IMediaGroupElement> _media = new ();
-
-    public override Type[] Mergeables { get; } =
-    {
-        typeof(TgText),
-        typeof(TgPhoto),
-        typeof(TgVideo),
-        typeof(TgNullElement),
-        typeof(TgMediaGroup),
-    };
+    private readonly bool _textUp; 
     
-    public TgMediaGroup(IEnumerable<IMediaGroupElement> media)
+    public TgMediaGroup(IEnumerable<IMediaGroupElement> media, bool textUp = false)
     {
         _media.AddRange(media);
+        _textUp = textUp;
     }
 
     public override TgElement AddText(TgText text)
     {
-        _media[0].Caption = _media[0].Caption is null ? text.Text : _media[0].Caption + "\n\n" + text.Text;
-        return this;
+        var copy = new TgMediaGroup(_media);
+        copy._media[0].Caption = _media[0].Caption is null ? text.Text : _media[0].Caption + "\n\n" + text.Text;
+        return copy;
     }
 
     public override TgElement AddPhoto(TgPhoto photo)
     {
-        AddMedium(photo);
-        return this;
+        var copy = new TgMediaGroup(_media);
+        copy.AddMedium(photo);
+        return copy;
     }
 
     public override TgElement AddVideo(TgVideo video)
     {
-        AddMedium(video);
-        return this;
+        var copy = new TgMediaGroup(_media);
+        copy.AddMedium(video);
+        return copy;
     }
 
     public override TgElement AddPoll(TgPoll poll)
@@ -78,43 +74,114 @@ public class TgMediaGroup : TgElement
             });
         }
 
-        if (inputMedia[0].Caption is null || inputMedia[0].Caption?.Length <= 1024)
+        do
         {
-            await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
-                async t => await context.BotClient.SendMediaGroupAsync(context.ChatId, inputMedia, cancellationToken: t),
-                token);
-        }
-        else
-        {
-            var text = inputMedia[0].Caption!;
-            inputMedia[0] = inputMedia[0].Type switch
+            if (inputMedia[0].Caption is null)
             {
-                InputMediaType.Photo => new InputMediaPhoto(inputMedia[0].Media),
-                InputMediaType.Video => new InputMediaVideo(inputMedia[0].Media),
-                _ => throw new NotSupportedException($"Medium type '{inputMedia[0].Media}' is not supported")
-            };
+                await SendOneMessage(context, inputMedia, token);
+                break;
+            }
 
-            Message? firstPart = null;
-            await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
-                async t =>
-                {
-                    var msgs = await context.BotClient.SendMediaGroupAsync(context.ChatId, inputMedia, cancellationToken: t);
-                    firstPart = msgs[0];
-                },
-                token);
-            
-            await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
-                async t =>
-                {
-                    await context.BotClient.SendTextMessageAsync(context.ChatId, text, cancellationToken: t, replyToMessageId: firstPart!.MessageId);
-                },
-                token);
-        }
+            if (_textUp)
+            {
+                await SendTextReplyWithMediaGroup(context, inputMedia, token);
+                break;
+            }
+
+            if (inputMedia[0].Caption!.Length <= 1024)
+            {
+                await SendOneMessage(context, inputMedia, token);
+                break;
+            }
+
+            await SendMediaGroupReplyWithText(context, inputMedia, token);
+
+        } while (false);
 
         foreach (var stream in mediaStreams)
         {
             stream.Close();
             await stream.DisposeAsync();
         }
+    }
+    
+    private async Task SendOneMessage(TgRenderContext context, List<IAlbumInputMedia> inputMedia, CancellationToken token)
+    {
+        await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
+            async t => await context.BotClient.SendMediaGroupAsync(context.ChatId, inputMedia, cancellationToken: t),
+            token);
+    }
+    
+    private async Task SendTextReplyWithMediaGroup(TgRenderContext context, List<IAlbumInputMedia> inputMedia, CancellationToken token)
+    {
+        var text = inputMedia[0].Caption!;
+        inputMedia[0] = inputMedia[0].Type switch
+        {
+            InputMediaType.Photo => new InputMediaPhoto(inputMedia[0].Media),
+            InputMediaType.Video => new InputMediaVideo(inputMedia[0].Media),
+            _ => throw new NotSupportedException($"Medium type '{inputMedia[0].Media}' is not supported")
+        };
+
+        Message? firstPart = null;
+        
+        await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
+            async t =>
+            {
+                firstPart = await context.BotClient.SendTextMessageAsync(context.ChatId, text, cancellationToken: t);
+            },
+            token);
+        
+        await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
+            async t =>
+            {
+                await context.BotClient.SendMediaGroupAsync(context.ChatId, inputMedia, cancellationToken: t, replyToMessageId: firstPart!.MessageId);
+            },
+            token);
+    }
+    
+    private async Task SendMediaGroupReplyWithText(TgRenderContext context, List<IAlbumInputMedia> inputMedia, CancellationToken token)
+    {
+        var text = inputMedia[0].Caption!;
+        inputMedia[0] = inputMedia[0].Type switch
+        {
+            InputMediaType.Photo => new InputMediaPhoto(inputMedia[0].Media),
+            InputMediaType.Video => new InputMediaVideo(inputMedia[0].Media),
+            _ => throw new NotSupportedException($"Medium type '{inputMedia[0].Media}' is not supported")
+        };
+
+        Message? firstPart = null;
+        await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
+            async t =>
+            {
+                var msgs = await context.BotClient.SendMediaGroupAsync(context.ChatId, inputMedia, cancellationToken: t);
+                firstPart = msgs[0];
+            },
+            token);
+            
+        await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
+            async t =>
+            {
+                await context.BotClient.SendTextMessageAsync(context.ChatId, text, cancellationToken: t, replyToMessageId: firstPart!.MessageId);
+            },
+            token);
+    }
+
+    public override DebugRenderToken[] DebugRender()
+    {
+        if (_media[0].Caption is null)
+            return new[] { new DebugRenderToken(DebugRenderTokenType.MediaGroup) };
+        
+        if (_textUp)
+        {
+            var text = new DebugRenderToken(_media[0].Caption!.Length <= 1024 ? DebugRenderTokenType.ShortText : DebugRenderTokenType.LongText);
+            var tokens = new[] { text, new DebugRenderToken(DebugRenderTokenType.MediaGroup, text) }; 
+            return tokens;
+        }
+        
+        if (_media[0].Caption!.Length <= 1024)
+            return new[] { new DebugRenderToken(DebugRenderTokenType.MediaGroupWithCaption) };
+
+        var mediaGroup = new DebugRenderToken(DebugRenderTokenType.MediaGroup);
+        return new[] { mediaGroup, new DebugRenderToken(DebugRenderTokenType.LongText, mediaGroup) };
     }
 }
