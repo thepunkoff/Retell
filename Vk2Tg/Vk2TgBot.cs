@@ -30,14 +30,14 @@ namespace Vk2Tg
         private string? _ts;
 
 
-        public Vk2TgBot(Vk2TgConfig config)
+        public Vk2TgBot()
         {
-            _config = config;
             var services = new ServiceCollection();
             services.AddAudioBypass();
             _vkApi = new VkApi(services);
 
-            _tgBotClient = new TelegramBotClient(config.TelegramToken, _httpClient);
+            _config = Vk2TgConfig.Current;
+            _tgBotClient = new TelegramBotClient(_config.TelegramToken, _httpClient);
         }
 
         public async Task Initialize()
@@ -64,7 +64,7 @@ namespace Vk2Tg
         {
             if (!_initialized)
                 throw new InvalidOperationException($"You should first initialize bot via {nameof(Initialize)} method.");
-            
+
             Console.WriteLine("Bot started.");
             while (true)
             {

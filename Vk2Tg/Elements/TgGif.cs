@@ -6,13 +6,22 @@ namespace Vk2Tg.Elements;
 
 public class TgGif : TgElement
 {
-    protected readonly bool _captionsHasHtml;
+    private readonly bool _captionsHasHtml;
+    private readonly bool _forceHtmlGif;
 
     public Uri Url { get; }
 
     public string? Caption { get; set; }
 
     public override Type[] Mergeables { get; }
+    
+    public TgGif(Uri url, string? caption = null, bool captionsHasHtml = false, bool forceHtmlGif = false)
+    {
+        Url = url;
+        Caption = caption;
+        _captionsHasHtml = captionsHasHtml;
+        _forceHtmlGif = forceHtmlGif;
+    }
 
     public override TgElement AddText(TgText text)
     {
@@ -21,15 +30,27 @@ public class TgGif : TgElement
 
     public override TgElement AddPhoto(TgPhoto photo)
     {
-        return Caption is not null
-            ? new TgCompoundElement(new TgGif(Url), new TgPhoto(photo.Url, Caption)) 
+        if (Caption is null)
+            return new TgCompoundElement(this, photo);
+
+        if (Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
+            return new TgCompoundElement(new TgGif(Url, Caption, forceHtmlGif: true), photo);
+
+        return Caption.Length <= 1024
+            ? new TgCompoundElement(new TgGif(Url), new TgPhoto(Url, Caption))
             : new TgCompoundElement(this, photo);
     }
 
     public override TgElement AddVideo(TgVideo video)
     {
-        return Caption is not null
-            ? new TgCompoundElement(new TgGif(Url), new TgPhoto(video.Url, Caption)) 
+        if (Caption is null)
+            return new TgCompoundElement(this, video);
+
+        if (Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
+            return new TgCompoundElement(new TgGif(Url, Caption, forceHtmlGif: true), video);
+
+        return Caption.Length <= 1024
+            ? new TgCompoundElement(new TgGif(Url), new TgVideo(Url, Caption))
             : new TgCompoundElement(this, video);
     }
 
@@ -45,28 +66,17 @@ public class TgGif : TgElement
 
     public override TgElement AddGif(TgGif gif)
     {
-        return Caption is not null
-            ? new TgCompoundElement(new TgGif(Url), new TgGif(gif.Url, Caption))
-            : new TgCompoundElement(this, gif);
-    }
+        if (Caption is null || Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
+            return new TgCompoundElement(this, gif);
 
-    public TgGif(Uri url, string? caption = null)
-    {
-        Url = url;
-        if (caption is null)
-        {
-            Caption = caption;
-        }
-        else
-        {
-            _captionsHasHtml = Helpers.TryTransformLinksVkToTelegram(caption, out var result);
-            Caption = result;
-        }
+        return Caption.Length <= 1024
+            ? new TgCompoundElement(new TgGif(Url), new TgPhoto(gif.Url, Caption))
+            : new TgCompoundElement(this, gif);
     }
 
     public override async Task Render(TgRenderContext context, CancellationToken token)
     {
-        if (Caption is null || Caption?.Length <= 1024)
+        if (!_forceHtmlGif && (Caption is null || Caption.Length <= 1024))
         {
             var inputOnlineFile = new InputOnlineFile(Url);
             await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(

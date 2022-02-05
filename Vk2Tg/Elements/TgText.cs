@@ -29,12 +29,12 @@ public class TgText : TgElement
 
     public override TgElement AddPhoto(TgPhoto photo)
     {
-        return new TgPhoto(photo.Url, Text);
+        return new TgPhoto(photo.Url, Text, _hasHtml);
     }
 
     public override TgElement AddVideo(TgVideo video)
     {
-        return new TgVideo(video.Url, Text);
+        return new TgVideo(video.Url, Text, _hasHtml);
     }
 
     public override TgElement AddPoll(TgPoll poll)
@@ -49,7 +49,7 @@ public class TgText : TgElement
 
     public override TgElement AddGif(TgGif gif)
     {
-        return new TgGif(gif.Url, Text);
+        return new TgGif(gif.Url, Text, _hasHtml);
     }
 
     public override async Task Render(TgRenderContext context, CancellationToken token)

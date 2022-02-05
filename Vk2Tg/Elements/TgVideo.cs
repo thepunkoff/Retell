@@ -8,6 +8,8 @@ namespace Vk2Tg.Elements;
 public class TgVideo : TgElement, IMediaGroupElement
 {
     protected readonly bool _captionsHasHtml;
+    private readonly bool _textUpIfLongCaption;
+
     public Uri Url { get; }
     public string? Caption { get; set; }
 
@@ -22,18 +24,12 @@ public class TgVideo : TgElement, IMediaGroupElement
         typeof(TgMediaGroup),
     };
 
-    public TgVideo(Uri url, string? caption = null)
+    public TgVideo(Uri url, string? caption = null, bool captionsHasHtml = false, bool textUpIfLongCaption = false)
     {
         Url = url;
-        if (caption is null)
-        {
-            Caption = caption;
-        }
-        else
-        {
-            _captionsHasHtml = Helpers.TryTransformLinksVkToTelegram(caption, out var result);
-            Caption = result;
-        }
+        Caption = caption;
+        _captionsHasHtml = captionsHasHtml;
+        _textUpIfLongCaption = textUpIfLongCaption;
     }
 
     public override TgElement AddText(TgText text)
@@ -63,40 +59,54 @@ public class TgVideo : TgElement, IMediaGroupElement
 
     public override TgElement AddGif(TgGif gif)
     {
-        return Caption is not null
-            ? new TgCompoundElement(new TgPhoto(Url), new TgGif(gif.Url, Caption)) 
-            : new TgCompoundElement(this, gif);
+        if (Caption is null)
+            return new TgCompoundElement(this, gif);
+
+        if (Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
+            return new TgCompoundElement(new TgVideo(Url, Caption, textUpIfLongCaption: true), gif);
+
+        return Caption.Length <= 1024
+            ? new TgCompoundElement(new TgVideo(Url), new TgGif(gif.Url, Caption))
+            : new TgCompoundElement(new TgVideo(Url, Caption, textUpIfLongCaption: true), gif);
     }
 
     public override async Task Render(TgRenderContext context, CancellationToken token)
     {
         if (Caption is null || Caption.Length <= 1024)
         {
-            // TODO: length!!!! (see TgPhoto.Render)
             await using var stream = await context.HttpClient.GetStreamAsync(Url, token);
             var inputOnlineFile = new InputOnlineFile(stream);
             await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
                 async t => await context.BotClient.SendVideoAsync(context.ChatId, inputOnlineFile, caption: Caption, cancellationToken: t, parseMode: _captionsHasHtml ? ParseMode.Html : null),
                 token);
+            return;
         }
-        else
+
+        Message? firstPart = null;
+
+        if (_textUpIfLongCaption)
         {
-            Message? firstPart = null;
-            
+            await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
+                async t => { firstPart = await context.BotClient.SendTextMessageAsync(context.ChatId, Caption, cancellationToken: t); },
+                token);
+                
             await using var stream = await context.HttpClient.GetStreamAsync(Url, token);
             var inputOnlineFile = new InputOnlineFile(stream);
             await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
-                async t =>
-                {
-                    firstPart = await context.BotClient.SendVideoAsync(context.ChatId, inputOnlineFile, cancellationToken: t, parseMode: _captionsHasHtml ? ParseMode.Html : null);
-                },
+                async t => { await context.BotClient.SendVideoAsync(context.ChatId, inputOnlineFile, cancellationToken: t, parseMode: _captionsHasHtml ? ParseMode.Html : null,  replyToMessageId: firstPart!.MessageId); },
+                token);
+        }
+        else
+        {
+                
+            await using var stream = await context.HttpClient.GetStreamAsync(Url, token);
+            var inputOnlineFile = new InputOnlineFile(stream);
+            await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
+                async t => { firstPart = await context.BotClient.SendVideoAsync(context.ChatId, inputOnlineFile, cancellationToken: t, parseMode: _captionsHasHtml ? ParseMode.Html : null); },
                 token);
 
             await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
-                async t =>
-                {
-                    await context.BotClient.SendTextMessageAsync(context.ChatId, Caption, cancellationToken: t, replyToMessageId: firstPart!.MessageId);
-                },
+                async t => { await context.BotClient.SendTextMessageAsync(context.ChatId, Caption, cancellationToken: t, replyToMessageId: firstPart!.MessageId); },
                 token);
         }
     }

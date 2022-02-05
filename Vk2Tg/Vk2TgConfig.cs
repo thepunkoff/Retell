@@ -5,10 +5,13 @@ namespace Vk2Tg
 {
     public class Vk2TgConfig
     {
+        public static Vk2TgConfig Current { get; set; } = new ();
         public string VkToken { get; set; }
         public ulong VkGroupId { get; set; }
         public string TelegramToken { get; set; }
         public long TelegramChatId { get; set; }
+
+        public GifMediaGroupMode GifMediaGroupMode { get; set; } = GifMediaGroupMode.Auto;
 
         public static async Task<Vk2TgConfig> FromYaml(string configPath)
         {

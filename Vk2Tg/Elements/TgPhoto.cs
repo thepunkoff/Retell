@@ -7,6 +7,7 @@ namespace Vk2Tg.Elements;
 public class TgPhoto : TgElement, IMediaGroupElement
 {
     private readonly bool _captionsHasHtml;
+    private readonly bool _forceHtmlPhoto;
 
     public Uri Url { get; }
     public string? Caption { get; set; }
@@ -22,18 +23,12 @@ public class TgPhoto : TgElement, IMediaGroupElement
         typeof(TgMediaGroup),
     };
     
-    public TgPhoto(Uri url, string? caption = null)
+    public TgPhoto(Uri url, string? caption = null, bool captionsHasHtml = false, bool forceHtmlPhoto = false)
     {
         Url = url;
-        if (caption is null)
-        {
-            Caption = caption;
-        }
-        else
-        {
-            _captionsHasHtml = Helpers.TryTransformLinksVkToTelegram(caption, out var result);
-            Caption = result;
-        }
+        Caption = caption;
+        _captionsHasHtml = captionsHasHtml;
+        _forceHtmlPhoto = forceHtmlPhoto;
     }
 
     public override TgElement AddText(TgText text)
@@ -63,14 +58,20 @@ public class TgPhoto : TgElement, IMediaGroupElement
 
     public override TgElement AddGif(TgGif gif)
     {
-        return Caption is not null
-            ? new TgCompoundElement(new TgPhoto(Url), new TgGif(gif.Url, Caption)) 
+        if (Caption is null)
+            return new TgCompoundElement(this, gif);
+
+        if (Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
+            return new TgCompoundElement(new TgPhoto(Url, Caption, forceHtmlPhoto: true), gif);
+
+        return Caption.Length <= 1024
+            ? new TgCompoundElement(new TgPhoto(Url), new TgGif(gif.Url, Caption))
             : new TgCompoundElement(this, gif);
     }
 
     public override async Task Render(TgRenderContext context, CancellationToken token)
     {
-        if (Caption is null || Caption.Length <= 1024)
+        if (!_forceHtmlPhoto && (Caption is null || Caption.Length <= 1024))
         {
             var inputOnlineFile = new InputOnlineFile(Url);
             await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
