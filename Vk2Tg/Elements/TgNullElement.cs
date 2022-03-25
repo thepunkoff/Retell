@@ -1,7 +1,11 @@
-﻿namespace Vk2Tg.Elements;
+﻿using NLog;
+
+namespace Vk2Tg.Elements;
 
 public class TgNullElement : TgElement
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     public override TgElement AddText(TgText text) => text;
 
     public override TgElement AddPhoto(TgPhoto photo) => photo;
@@ -15,7 +19,7 @@ public class TgNullElement : TgElement
 
     public override Task Render(TgRenderContext context, CancellationToken token)
     {
-        Console.WriteLine("Null element was rendered!");
+        Logger.Warn("Null element was rendered!");
         return Task.CompletedTask;
     }
 

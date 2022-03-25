@@ -58,4 +58,11 @@ public class TgText : TgElement
 
         return new[] { token };
     }
+
+    public override string ToString()
+    {
+        return Text.Length <= 1024
+            ? "[Short text]"
+            : "[Long text]";
+    }
 }

@@ -128,7 +128,7 @@ public class TgVideo : TgElement, IMediaGroupElement
 
         if (_textUp)
         {
-            var text = new DebugRenderToken(Caption.Length <= 1024? DebugRenderTokenType.ShortText : DebugRenderTokenType.LongText);
+            var text = new DebugRenderToken(Caption.Length <= 1024 ? DebugRenderTokenType.ShortText : DebugRenderTokenType.LongText);
             var tokens = new[] { text, new DebugRenderToken(DebugRenderTokenType.Video, text) }; 
             return tokens;
         }
@@ -138,5 +138,18 @@ public class TgVideo : TgElement, IMediaGroupElement
             
         var video = new DebugRenderToken(DebugRenderTokenType.Video);
         return new[] { video, new DebugRenderToken(Caption.Length <= 1024 ? DebugRenderTokenType.ShortText : DebugRenderTokenType.LongText, video) };
+    }
+
+    public override string ToString()
+    {
+        if (Caption is null)
+            return "[Video]";
+
+        if (_textUp)
+            return $"{(Caption.Length <= 1024 ? "[Short text" : "[Long text")} replied by a video]";
+
+        return Caption.Length <= 1024
+            ? "[Video with caption]"
+            : $"[Video replied by a {(Caption.Length <= 1024 ? "short text]" : "long text]")}";
     }
 }

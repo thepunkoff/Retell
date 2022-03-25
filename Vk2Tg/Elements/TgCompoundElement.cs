@@ -56,4 +56,9 @@ public class TgCompoundElement : TgElement
     {
         return _first.DebugRender().Concat(_second.DebugRender()).ToArray();
     }
+
+    public override string ToString()
+    {
+        return $"[{{{_first}, {_first}}}]";
+    }
 }

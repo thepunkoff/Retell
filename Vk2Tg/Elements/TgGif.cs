@@ -109,4 +109,16 @@ public class TgGif : TgElement
                 ? new[] { new DebugRenderToken(DebugRenderTokenType.GifWithCaption) }
                 : new[] { new DebugRenderToken(DebugRenderTokenType.TextWithHtmlGif) };
     }
+
+    public override string ToString()
+    {
+        if (Caption is null)
+            return "[Git]";
+
+        return _textUp
+            ? "[Text with HTML gif]"
+            : Caption.Length <= 1024
+                ? "[Gif with caption]"
+                : "[Text with HTML gif]";
+    }
 }

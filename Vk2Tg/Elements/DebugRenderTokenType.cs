@@ -14,5 +14,7 @@ public enum DebugRenderTokenType
     GifWithCaption,
     TextWithHtmlGif,
     MediaGroup,
-    MediaGroupWithCaption
+    MediaGroupWithCaption,
+    Poll,
+    Link
 }

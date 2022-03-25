@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NLog;
 using Telegram.Bot;
 using Vk2Tg.Elements;
 using VkNet;
@@ -16,6 +17,8 @@ namespace Vk2Tg
 {
     public class Vk2TgBot
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    
         private readonly Vk2TgConfig _config;
         private readonly VkApi _vkApi;
         private readonly TelegramBotClient _tgBotClient;
@@ -42,21 +45,25 @@ namespace Vk2Tg
 
         public async Task Initialize()
         {
-            Console.WriteLine("Initializing Vk2Tg...");
+            Logger.Info("Initializing Vk2Tg...");
 
+            Logger.Info("Authorizing...");
             await _vkApi.AuthorizeAsync(new ApiAuthParams
             {
                 AccessToken = _config.VkToken,
                 Settings = Settings.All | Settings.Offline,
                 TwoFactorAuthorization = Console.ReadLine,
             });
+            Logger.Info("Authorization ok.");
 
+            Logger.Info("Getting long poll server...");
             var longPollServerResponse = await _vkApi.Groups.GetLongPollServerAsync(_config.VkGroupId);
+            Logger.Info("Get long poll server ok.");
             _key = longPollServerResponse.Key;
             _server = longPollServerResponse.Server;
             _ts = longPollServerResponse.Ts;
             
-            Console.WriteLine("Initialization ok!");
+            Logger.Info("Initialization ok.");
             _initialized = true;
         }
         
@@ -65,74 +72,106 @@ namespace Vk2Tg
             if (!_initialized)
                 throw new InvalidOperationException($"You should first initialize bot via {nameof(Initialize)} method.");
 
-            Console.WriteLine("Bot started.");
+            Logger.Info("Bot started.");
             while (true)
             {
-                BotsLongPollHistoryResponse longPollResponse;
                 try
                 {
-                    longPollResponse = await _vkApi.Groups.GetBotsLongPollHistoryAsync(new BotsLongPollHistoryParams
-                    {
-                        Key = _key,
-                        Server = _server,
-                        Ts = _ts,
-                    });
+                    var longPollResponse = await GetNextLongPollResponse();
+                    if (longPollResponse is not null)
+                        await ProcessEvents(longPollResponse);
                 }
-                catch (LongPollOutdateException ex)
+                catch (Exception ex)
                 {
-                    Console.WriteLine("LongPollOutdateException: using new ts.");
-                    _ts = ex.Ts;
-                    continue;
-                }
-                catch (LongPollKeyExpiredException)
-                {
-                    Console.WriteLine("LongPollKeyExpiredException: requesting key again.");
-                    var longPollServerResponse = await _vkApi.Groups.GetLongPollServerAsync(_config.VkGroupId);
-                    _key = longPollServerResponse.Key;
-                    continue;
-                }
-                catch (LongPollInfoLostException)
-                {
-                    Console.WriteLine("LongPollInfoLostException: requesting key and ts again.");
-                    var longPollServerResponse = await _vkApi.Groups.GetLongPollServerAsync(_config.VkGroupId);
-                    _key = longPollServerResponse.Key;
-                    _ts = longPollServerResponse.Ts;
-                    continue;
-                }
-                catch (VkApiMethodInvokeException apiEx) when (apiEx.Message.ToLowerInvariant().Contains("unknown application"))
-                {
-                    Console.WriteLine($"Long poll history request failed. It happens - trying again. (error code: {apiEx.ErrorCode}):\n{apiEx}");
-                    continue;
+                    Logger.Error(ex, "Error occured while processing long poll responses.");
+                    await MailService.SendException(ex);
                 }
 
-                _ts = longPollResponse.Ts;
-
-                foreach (var update in longPollResponse.Updates)
-                {
-                    if (update.WallPost is null)
-                        continue;
-
-                    if (update.WallPost.FromId is null)
-                    {
-                        Console.WriteLine("Error occured: no FromId!");
-                        continue;
-                    }
-
-                    if (update.WallPost.FromId == -(long)_config.VkGroupId)
-                        Console.WriteLine("New community wall post detected!");
-
-                    var tgElement = CreateTgElement(update.WallPost);
-                    await tgElement.Render(new TgRenderContext(_tgBotClient, _config.TelegramChatId, _httpClient), default);
-                }
+                await Task.Delay(TimeSpan.FromSeconds(1));
             }
+        }
+
+        private async Task ProcessEvents(BotsLongPollHistoryResponse longPollResponse)
+        {
+            foreach (var update in longPollResponse.Updates)
+            {
+                if (update.WallPost is null)
+                    continue;
+
+                if (update.WallPost.FromId is null)
+                {
+                    Logger.Warn("No FromId in the long poll response.");
+                    continue;
+                }
+
+                if (update.WallPost.FromId != -(long)_config.VkGroupId)
+                    continue;
+
+                Logger.Info($"New community wall post detected: {(update.WallPost.Text.Length > 100 ? update.WallPost.Text[..100] : update.WallPost.Text)}");
+
+                var tgElement = CreateTgElement(update.WallPost);
+                    
+                Logger.Debug("Rendering TgElement...");
+                await tgElement.Render(new TgRenderContext(_tgBotClient, _config.TelegramChatId, _httpClient), default);
+                Logger.Debug("TgElement rendered.");
+            }
+        }
+
+        private async Task<BotsLongPollHistoryResponse?> GetNextLongPollResponse()
+        {
+            BotsLongPollHistoryResponse longPollResponse;
+            try
+            {
+                longPollResponse = await _vkApi.Groups.GetBotsLongPollHistoryAsync(new BotsLongPollHistoryParams
+                {
+                    Key = _key,
+                    Server = _server,
+                    Ts = _ts,
+                });
+            }
+            catch (LongPollOutdateException ex)
+            {
+                Logger.Trace("LongPollOutdateException: using new ts.");
+                _ts = ex.Ts;
+                return null;
+            }
+            catch (LongPollKeyExpiredException)
+            {
+                Logger.Trace("LongPollKeyExpiredException: requesting key again.");
+                var longPollServerResponse = await _vkApi.Groups.GetLongPollServerAsync(_config.VkGroupId);
+                _key = longPollServerResponse.Key;
+                return null;
+            }
+            catch (LongPollInfoLostException)
+            {
+                Logger.Trace("LongPollInfoLostException: requesting key and ts again.");
+                var longPollServerResponse = await _vkApi.Groups.GetLongPollServerAsync(_config.VkGroupId);
+                _key = longPollServerResponse.Key;
+                _ts = longPollServerResponse.Ts;
+                return null;
+            }
+            catch (VkApiMethodInvokeException apiEx) when (apiEx.Message.ToLowerInvariant().Contains("unknown application"))
+            {
+                Logger.Error($"Long poll history request failed. Trying again. (error code: {apiEx.ErrorCode}):\n{apiEx}");
+                await MailService.SendException(apiEx);
+                return null;
+            }
+
+            _ts = longPollResponse.Ts;
+
+            return longPollResponse;
         }
 
         private TgElement CreateTgElement(WallPost wallPost)
         {
+            Logger.Debug("Creating TgElement...");
             TgElement ret = new TgNullElement();
 
             if (!string.IsNullOrWhiteSpace(wallPost.Text))
+            {
                 ret = ret.AddText(new TgText(wallPost.Text));
+                Logger.Debug($"Added text. Result: {ret}.");
+            }
 
             foreach (var attachment in wallPost.Attachments)
             {
@@ -140,24 +179,32 @@ namespace Vk2Tg
                 {
                     case Photo photo:
                         ret = ret.AddPhoto(new TgPhoto(photo.Sizes.Last().Url));
+                        Logger.Debug($"Added photo. Result: {ret}.");
                         break;
                     case Video video:
                         var videoCollection = _vkApi.Video.Get(new VideoGetParams { Videos = new[] { video } });
                         ret = ret.AddVideo(new TgVideo(ChoseBestQualityUrl(videoCollection[0])));
+                        Logger.Debug($"Added video. Result: {ret}.");
                         break;
                     case Poll poll:
                         ret = ret.AddPoll(new TgPoll(poll.Question, poll.Answers.Select(x => x.Text).ToArray(), poll.Multiple ?? false));
+                        Logger.Debug($"Added poll. Result: {ret}.");
                         break;
                     case Link link:
                         ret = ret.AddLink(new TgLink(link.Uri.ToString()));
+                        Logger.Debug($"Added link. Result: {ret}.");
                         break;
                     case Document doc:
                         if (doc.Ext == "gif")
+                        {
                             ret = ret.AddGif(new TgGif(new Uri(doc.Uri)));
+                            Logger.Debug($"Added gif. Result: {ret}.");
+                        }
                         break;
                 }
             }
-
+            
+            Logger.Debug("TgElement created.");
             return ret;
         }
 

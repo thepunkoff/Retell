@@ -184,4 +184,19 @@ public class TgMediaGroup : TgElement
         var mediaGroup = new DebugRenderToken(DebugRenderTokenType.MediaGroup);
         return new[] { mediaGroup, new DebugRenderToken(DebugRenderTokenType.LongText, mediaGroup) };
     }
+
+    public override string ToString()
+    {
+        var mediaString = string.Join(", ", _media.ToString());
+
+        if (_media[0].Caption is null)
+            return $"[Media group: {mediaString}]";
+        
+        if (_textUp)
+            return $"{(_media[0].Caption!.Length <= 1024 ? "[Short text" : "[Long text")} replied by a media group {mediaString}]";
+        
+        return _media[0].Caption!.Length <= 1024
+            ? $"[Media group with caption: {mediaString}]"
+            : $"[Media group: {mediaString}. Replied by a long text]";
+    }
 }

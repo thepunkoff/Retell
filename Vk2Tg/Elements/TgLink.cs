@@ -50,6 +50,11 @@ public class TgLink : TgElement
 
     public override DebugRenderToken[] DebugRender()
     {
-        throw new NotImplementedException();
+        return new[] { new DebugRenderToken(DebugRenderTokenType.Link) };
+    }
+
+    public override string ToString()
+    {
+        return "[Link]";
     }
 }

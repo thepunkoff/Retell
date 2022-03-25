@@ -90,4 +90,16 @@ public class TgPhoto : TgElement, IMediaGroupElement
                 ? new[] { new DebugRenderToken(DebugRenderTokenType.PhotoWithCaption) }
                 : new[] { new DebugRenderToken(DebugRenderTokenType.TextWithHtmlPhoto) };
     }
+
+    public override string ToString()
+    {
+        if (Caption is null)
+            return "[Photo]";
+
+        return _textUp
+            ? "[Text with HTML photo]"
+            : Caption.Length <= 1024
+                ? "[Photo with caption]"
+                : "[Text with HTML photo]";
+    }
 }

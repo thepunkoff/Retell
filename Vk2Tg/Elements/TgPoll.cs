@@ -55,6 +55,11 @@ public class TgPoll : TgElement
 
     public override DebugRenderToken[] DebugRender()
     {
-        throw new NotImplementedException();
+        return new[] { new DebugRenderToken(DebugRenderTokenType.Poll) };
+    }
+
+    public override string ToString()
+    {
+        return "[Poll]";
     }
 }
