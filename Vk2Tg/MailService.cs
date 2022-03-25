@@ -20,12 +20,13 @@ namespace Vk2Tg
                 EnableSsl = true,
                 Port = 587,
                 UseDefaultCredentials = false,
-                Credentials = new NetworkCredential(
-                    Vk2TgConfig.Current.GmailEmail,
-                    Vk2TgConfig.Current.GmailPassword),
             };
+
+            _smtpClient.Credentials = new NetworkCredential(
+                Vk2TgConfig.Current.GmailEmail,
+                Vk2TgConfig.Current.GmailPassword);
             
-            var sender = Assembly.GetExecutingAssembly().FullName;
+            var sender = Assembly.GetExecutingAssembly().GetName().Name;
 #if DEBUG
             Logger.Error($"[DEBUG] Exception message from {sender} reported by mail:\n{exception}.");
             return;
@@ -35,7 +36,7 @@ namespace Vk2Tg
                 var mail = new MailMessage
                 {
                     From = new MailAddress(Vk2TgConfig.Current.GmailEmail),
-                    Subject = "KustarovBot exception",
+                    Subject = "Vk2Tg exception",
                     Body = $"[{sender}]: {exception}",
                     To = { Vk2TgConfig.Current.GmailEmail }
                 };

@@ -73,6 +73,7 @@ namespace Vk2Tg
                 throw new InvalidOperationException($"You should first initialize bot via {nameof(Initialize)} method.");
 
             Logger.Info("Bot started.");
+
             while (true)
             {
                 try
