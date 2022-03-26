@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using Telegram.Bot;
+using Vk2Tg.Admin;
 using Vk2Tg.Elements;
-using Vk2Tg.Http;
 using VkNet;
 using VkNet.AudioBypassService.Extensions;
 using VkNet.Enums.Filters;
@@ -23,7 +23,8 @@ namespace Vk2Tg
         private readonly Vk2TgConfig _config;
         private readonly VkApi _vkApi;
         private readonly TelegramBotClient _tgBotClient;
-        private readonly HttpServer _httpServer = new (8080);
+        private readonly AdminConsole _adminConsole;
+        // private readonly HttpServer _httpServer = new (8080);
         private readonly HttpClient _httpClient = new ()
         {
             Timeout = TimeSpan.FromSeconds(100)
@@ -43,6 +44,7 @@ namespace Vk2Tg
 
             _config = Vk2TgConfig.Current;
             _tgBotClient = new TelegramBotClient(_config.TelegramToken, _httpClient);
+            _adminConsole = new AdminConsole(_tgBotClient);
         }
 
         public async Task Initialize()
@@ -65,9 +67,13 @@ namespace Vk2Tg
             _ts = longPollServerResponse.Ts;
             Logger.Trace("Get long poll server ok.");
             
-            Logger.Trace("Initializing http server...");
-            _httpServer.Start();
-            Logger.Trace("Http server initialized.");
+            Logger.Trace("Initializing admin console...");
+            _adminConsole.Start();
+            Logger.Trace("Admin console initialized.");
+            
+            // Logger.Trace("Initializing http server...");
+            // _httpServer.Start();
+            // Logger.Trace("Http server initialized.");
             
             Logger.Info("Initialization ok.");
             _initialized = true;
@@ -247,7 +253,8 @@ namespace Vk2Tg
 
         public async ValueTask DisposeAsync()
         {
-            await _httpServer.DisposeAsync();
+            // await _httpServer.DisposeAsync();
+            await _adminConsole.DisposeAsync();
         }
     }
 }

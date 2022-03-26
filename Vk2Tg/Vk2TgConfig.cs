@@ -10,6 +10,8 @@ namespace Vk2Tg
         public ulong VkGroupId { get; set; }
         public string TelegramToken { get; set; }
         public long TelegramChatId { get; set; }
+
+        public string AdminPassword { get; set; }
         public GifMediaGroupMode GifMediaGroupMode { get; set; } = GifMediaGroupMode.Auto;
 
         public string GmailEmail { get; set; }

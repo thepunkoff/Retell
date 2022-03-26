@@ -1,5 +1,4 @@
-﻿using System.Collections.Specialized;
-using System.Net;
+﻿using System.Net;
 using NLog;
 
 namespace Vk2Tg.Http.Handlers;
@@ -55,7 +54,7 @@ public class SettingsHandler
                     case "true":
                         if (DynamicSettings.IsBotEnabled)
                         {
-                            Logger.Trace($"[{nameof(SettingsHandler)}] Bot already enabled.");
+                            Logger.Info($"[{nameof(SettingsHandler)}] Bot already enabled.");
                         }
                         else
                         {
@@ -66,7 +65,7 @@ public class SettingsHandler
                     case "false":
                         if (!DynamicSettings.IsBotEnabled)
                         {
-                            Logger.Trace($"[{nameof(SettingsHandler)}] Bot already disabled.");
+                            Logger.Info($"[{nameof(SettingsHandler)}] Bot already disabled.");
                         }
                         else
                         {
