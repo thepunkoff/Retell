@@ -2,6 +2,7 @@
 using NLog;
 using Telegram.Bot;
 using Vk2Tg.Elements;
+using Vk2Tg.Http;
 using VkNet;
 using VkNet.AudioBypassService.Extensions;
 using VkNet.Enums.Filters;
@@ -15,13 +16,14 @@ using Video = VkNet.Model.Attachments.Video;
 
 namespace Vk2Tg
 {
-    public class Vk2TgBot
+    public sealed class Vk2TgBot : IAsyncDisposable
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
         private readonly Vk2TgConfig _config;
         private readonly VkApi _vkApi;
         private readonly TelegramBotClient _tgBotClient;
+        private readonly HttpServer _httpServer = new (8080);
         private readonly HttpClient _httpClient = new ()
         {
             Timeout = TimeSpan.FromSeconds(100)
@@ -47,21 +49,25 @@ namespace Vk2Tg
         {
             Logger.Info("Initializing Vk2Tg...");
 
-            Logger.Info("Authorizing...");
+            Logger.Trace("Authorizing...");
             await _vkApi.AuthorizeAsync(new ApiAuthParams
             {
                 AccessToken = _config.VkToken,
                 Settings = Settings.All | Settings.Offline,
                 TwoFactorAuthorization = Console.ReadLine,
             });
-            Logger.Info("Authorization ok.");
+            Logger.Trace("Authorization ok.");
 
-            Logger.Info("Getting long poll server...");
+            Logger.Trace("Getting long poll server...");
             var longPollServerResponse = await _vkApi.Groups.GetLongPollServerAsync(_config.VkGroupId);
-            Logger.Info("Get long poll server ok.");
             _key = longPollServerResponse.Key;
             _server = longPollServerResponse.Server;
             _ts = longPollServerResponse.Ts;
+            Logger.Trace("Get long poll server ok.");
+            
+            Logger.Trace("Initializing http server...");
+            _httpServer.Start();
+            Logger.Trace("Http server initialized.");
             
             Logger.Info("Initialization ok.");
             _initialized = true;
@@ -108,13 +114,22 @@ namespace Vk2Tg
                 if (update.WallPost.FromId != -(long)_config.VkGroupId)
                     continue;
 
-                Logger.Info($"New community wall post detected: {(update.WallPost.Text.Length > 100 ? update.WallPost.Text[..100] : update.WallPost.Text)}");
+                var shortPostString = update.WallPost.Text is not null
+                    ? update.WallPost.Text.Length > 100
+                        ? update.WallPost.Text[..100]
+                        : update.WallPost.Text
+                    : "no text in post";
+
+                Logger.Info($"New community wall post detected: '{shortPostString}'");
+
+                if (!VkPostFilter.ShouldShow(update.WallPost))
+                    continue;
 
                 var tgElement = CreateTgElement(update.WallPost);
                     
-                Logger.Debug("Rendering TgElement...");
+                Logger.Trace("Rendering TgElement...");
                 await tgElement.Render(new TgRenderContext(_tgBotClient, _config.TelegramChatId, _httpClient), default);
-                Logger.Debug("TgElement rendered.");
+                Logger.Trace("TgElement rendered.");
             }
         }
 
@@ -228,6 +243,11 @@ namespace Vk2Tg
                 return video.Files.Mp4_240;
             
             throw new ArgumentNullException(nameof(video), "All video files uris were null.");
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await _httpServer.DisposeAsync();
         }
     }
 }

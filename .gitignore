@@ -6,3 +6,4 @@ riderModule.iml
 .idea/
 
 config.yml
+publish.ps1
