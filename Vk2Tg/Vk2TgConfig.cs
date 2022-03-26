@@ -12,6 +12,8 @@ namespace Vk2Tg
         public long TelegramChatId { get; set; }
 
         public string AdminPassword { get; set; }
+
+        public int AutoRelogIdlePeriodMinutes { get; set; }
         public GifMediaGroupMode GifMediaGroupMode { get; set; } = GifMediaGroupMode.Auto;
 
         public string GmailEmail { get; set; }

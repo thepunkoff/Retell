@@ -13,6 +13,7 @@ public sealed class AdminConsole : IAsyncDisposable
     private readonly QueuedUpdateReceiver _updateReceiver;
     private readonly CancellationTokenSource _cts = new();
     private readonly List<long> _authorizedIds = new();
+    private DateTime _lastMessageTimestamp = DateTime.MinValue;
 
     private Task? _worker;
 
@@ -32,9 +33,16 @@ public sealed class AdminConsole : IAsyncDisposable
         {
             try
             {
-
                 await foreach (var update in _updateReceiver.WithCancellation(_cts.Token))
                 {
+                    if (_lastMessageTimestamp != DateTime.UtcNow && DateTime.UtcNow - _lastMessageTimestamp > TimeSpan.FromMinutes(Vk2TgConfig.Current.AutoRelogIdlePeriodMinutes) && _authorizedIds.Count > 0)
+                    {
+                        _authorizedIds.Clear();
+                        Logger.Info($"[{nameof(AdminConsole)}] Automatic relog triggered. All authorized users are no longer authorized.");
+                    }
+                    
+                    _lastMessageTimestamp = DateTime.UtcNow;
+                    
                     if (update.Message is not { } message)
                         continue;
 
@@ -57,11 +65,11 @@ public sealed class AdminConsole : IAsyncDisposable
                     switch (split[0])
                     {
                         case "/start":
-                            const string helpMessage = "/enable - Включить бота\n/disable - Выключить бота";
+                            const string helpMessage = "/status - Отобразить статус бота и текущие настройки\n/enable - Включить бота\n/disable - Выключить бота";
                             await _telegramBotClient.SendTextMessageAsync(message.From.Id,
                                 (!_authorizedIds.Contains(message.From.Id)
-                                    ? "Чтобы авторизоваться, введите '/login <ваш пароль>' (без угловых скобок).\n\n"
-                                    : string.Empty) + helpMessage);
+                                    ? "*Вы не авторизованы.* Чтобы авторизоваться, введите '/login <ваш пароль>' (без угловых скобок).\n\n"
+                                    : string.Empty) + helpMessage, ParseMode.Markdown);
                             continue;
                         case "/status":
                             if (!await CheckAuth(message.From.Id))
@@ -144,7 +152,7 @@ public sealed class AdminConsole : IAsyncDisposable
         
         _authorizedIds.Add(userId);
         Logger.Info($"[{nameof(AdminConsole)}] Successful authorization: {userId}.");
-        await _telegramBotClient.SendTextMessageAsync(userId, $"*Вы успешно авторизованы!*\n\n{DynamicSettings.ToUserMarkdownString()}", ParseMode.Markdown);
+        await _telegramBotClient.SendTextMessageAsync(userId, $"*Вы успешно авторизованы!*\n\n{DynamicSettings.ToUserMarkdownString()}\n\n*Внимание!* Вы будете автоматически разлогинены через {Vk2TgConfig.Current.AutoRelogIdlePeriodMinutes} минут бездействия.", ParseMode.Markdown);
     }
 
     private async Task<bool> CheckAuth(long userId)
