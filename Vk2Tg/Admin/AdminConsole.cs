@@ -35,10 +35,10 @@ public sealed class AdminConsole : IAsyncDisposable
             {
                 await foreach (var update in _updateReceiver.WithCancellation(_cts.Token))
                 {
-                    if (_lastMessageTimestamp != DateTime.UtcNow && DateTime.UtcNow - _lastMessageTimestamp > TimeSpan.FromMinutes(Vk2TgConfig.Current.AutoRelogIdlePeriodMinutes) && _authorizedIds.Count > 0)
+                    if (_lastMessageTimestamp != DateTime.UtcNow && DateTime.UtcNow - _lastMessageTimestamp > TimeSpan.FromMinutes(Vk2TgConfig.Current.AutoLogoutIdlePeriodMinutes) && _authorizedIds.Count > 0)
                     {
                         _authorizedIds.Clear();
-                        Logger.Info($"[{nameof(AdminConsole)}] Automatic relog triggered. All authorized users are no longer authorized.");
+                        Logger.Info($"[{nameof(AdminConsole)}] Automatic logout triggered. All authorized users are no longer authorized.");
                     }
                     
                     _lastMessageTimestamp = DateTime.UtcNow;
@@ -152,7 +152,7 @@ public sealed class AdminConsole : IAsyncDisposable
         
         _authorizedIds.Add(userId);
         Logger.Info($"[{nameof(AdminConsole)}] Successful authorization: {userId}.");
-        await _telegramBotClient.SendTextMessageAsync(userId, $"*Вы успешно авторизованы!*\n\n{DynamicSettings.ToUserMarkdownString()}\n\n*Внимание!* Вы будете автоматически разлогинены через {Vk2TgConfig.Current.AutoRelogIdlePeriodMinutes} минут бездействия.", ParseMode.Markdown);
+        await _telegramBotClient.SendTextMessageAsync(userId, $"*Вы успешно авторизованы!*\n\n{DynamicSettings.ToUserMarkdownString()}\n\n*Внимание!* Вы будете автоматически разлогинены через {Vk2TgConfig.Current.AutoLogoutIdlePeriodMinutes} минут бездействия.", ParseMode.Markdown);
     }
 
     private async Task<bool> CheckAuth(long userId)

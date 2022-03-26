@@ -13,7 +13,7 @@ namespace Vk2Tg
 
         public string AdminPassword { get; set; }
 
-        public int AutoRelogIdlePeriodMinutes { get; set; }
+        public int AutoLogoutIdlePeriodMinutes { get; set; }
         public GifMediaGroupMode GifMediaGroupMode { get; set; } = GifMediaGroupMode.Auto;
 
         public string GmailEmail { get; set; }
