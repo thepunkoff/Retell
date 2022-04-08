@@ -2,10 +2,22 @@
 
 public static class DynamicSettings
 {
-    public static bool IsBotEnabled { get; set; } = true;
+    public static bool IsBotEnabled { get; set; }
 
+    public static string[]? SignalWords { get; private set; }
+
+    public static void SetSignalWords(string[] signalWords)
+    {
+        SignalWords = signalWords;
+    }
+
+    public static void DisableSignalWords()
+    {
+        SignalWords = null;
+    }
+    
     public static string ToUserMarkdownString()
     {
-        return $"Бот сейчас *{(IsBotEnabled ? "работает" : "не работает")}.*";
+        return $"*Статус:*\n\nБот сейчас {(IsBotEnabled ? "*работает*. Чтобы его выключить, введите /disable" : "*выключен*. Чтобы его включить, введите /enable")}.\n\nСигнальные слова{(SignalWords is not null ? $": '{string.Join(", ", SignalWords).ToEscapedMarkdownString()}'. Невидимый символ *в начале строки* (например, _&#013_;) является сигнальным словом по умолчанию. Чтобы выключить сигнальные слова, введите /disable\\_signal\\_words" : " *выключены*. Чтобы установить сигнальные слова, введите /signal <слово> <слово> <слово> ... (без угловых скобок)")}.";
     }
 }

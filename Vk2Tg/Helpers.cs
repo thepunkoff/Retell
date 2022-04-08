@@ -27,4 +27,13 @@ public static class Helpers
         result = Regex.Replace(result, VkLinkLong, "<a href=\"$1\">$2</a>");
         return true;
     }
+
+    public static string ToEscapedMarkdownString(this string s)
+    {
+        return s
+            .Replace("_", "\\_")
+            .Replace("*", "\\*")
+            .Replace("[", "\\[")
+            .Replace("`", "\\`");
+    }
 }

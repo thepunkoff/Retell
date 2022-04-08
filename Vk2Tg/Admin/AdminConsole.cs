@@ -1,5 +1,6 @@
 ﻿using NLog;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types.Enums;
 
@@ -31,26 +32,30 @@ public sealed class AdminConsole : IAsyncDisposable
     {
         _worker = Task.Run(async () =>
         {
-            try
+            await foreach (var update in _updateReceiver.WithCancellation(_cts.Token))
             {
-                await foreach (var update in _updateReceiver.WithCancellation(_cts.Token))
+                if (_lastMessageTimestamp != DateTime.UtcNow &&
+                    DateTime.UtcNow - _lastMessageTimestamp >
+                    TimeSpan.FromMinutes(Vk2TgConfig.Current.AutoLogoutIdlePeriodMinutes) && _authorizedIds.Count > 0)
                 {
-                    if (_lastMessageTimestamp != DateTime.UtcNow && DateTime.UtcNow - _lastMessageTimestamp > TimeSpan.FromMinutes(Vk2TgConfig.Current.AutoLogoutIdlePeriodMinutes) && _authorizedIds.Count > 0)
-                    {
-                        _authorizedIds.Clear();
-                        Logger.Info($"[{nameof(AdminConsole)}] Automatic logout triggered. All authorized users are no longer authorized.");
-                    }
-                    
-                    _lastMessageTimestamp = DateTime.UtcNow;
-                    
-                    if (update.Message is not { } message)
-                        continue;
+                    _authorizedIds.Clear();
+                    Logger.Info(
+                        $"[{nameof(AdminConsole)}] Automatic logout triggered. All authorized users are no longer authorized.");
+                }
 
-                    if (message.From is null)
-                    {
-                        Logger.Error("Message.From was null.");
-                        continue;
-                    }
+                _lastMessageTimestamp = DateTime.UtcNow;
+
+                if (update.Message is not { } message)
+                    continue;
+
+                if (message.From is null)
+                {
+                    Logger.Error("Message.From was null.");
+                    continue;
+                }
+
+                try
+                {
 
                     if (message.Text is null)
                     {
@@ -59,17 +64,23 @@ public sealed class AdminConsole : IAsyncDisposable
                         continue;
                     }
 
-                    Logger.Trace($"Incoming command: '{(message.Text.Length > 100 ? message.Text[..100] : message.Text)}'.");
+                    Logger.Trace(
+                        $"Incoming command: '{(message.Text.Length > 100 ? message.Text[..100] : message.Text)}'.");
 
                     var split = message.Text.Split(" ");
                     switch (split[0])
                     {
                         case "/start":
-                            const string helpMessage = "/status - Отобразить статус бота и текущие настройки\n/enable - Включить бота\n/disable - Выключить бота";
+                            const string helpMessageMarkdown =
+                                "/status - Отобразить статус бота и текущие настройки\n" +
+                                "/enable - Включить бота\n" +
+                                "/disable - Выключить бота\n" +
+                                "/signal <слово> <слово> <слово> ... - Установить сигнальные слова (без угловых скобок)\n" +
+                                "/disable\\_signal\\_words - Выключить сигнальные слова";
                             await _telegramBotClient.SendTextMessageAsync(message.From.Id,
                                 (!_authorizedIds.Contains(message.From.Id)
                                     ? "*Вы не авторизованы.* Чтобы авторизоваться, введите '/login <ваш пароль>' (без угловых скобок).\n\n"
-                                    : string.Empty) + helpMessage, ParseMode.Markdown);
+                                    : string.Empty) + helpMessageMarkdown, ParseMode.Markdown);
                             continue;
                         case "/status":
                             if (!await CheckAuth(message.From.Id))
@@ -80,8 +91,10 @@ public sealed class AdminConsole : IAsyncDisposable
                         case "/login":
                             if (split.Length == 1)
                             {
-                                Logger.Trace($"[{nameof(AdminConsole)}] Login command contained of only one part. Couldn't find password in the string.");
-                                await _telegramBotClient.SendTextMessageAsync(message.From.Id, "Чтобы авторизоваться, введите '/login <ваш пароль>' (без угловых скобок).");
+                                Logger.Trace(
+                                    $"[{nameof(AdminConsole)}] Login command contained of only one part. Couldn't find password in the string.");
+                                await _telegramBotClient.SendTextMessageAsync(message.From.Id,
+                                    "Чтобы авторизоваться, введите '/login <ваш пароль>' (без угловых скобок).");
                                 continue;
                             }
 
@@ -89,8 +102,34 @@ public sealed class AdminConsole : IAsyncDisposable
                             Logger.Trace($"[{nameof(AdminConsole)}] Deleting password string.");
                             await _telegramBotClient.DeleteMessageAsync(message.From.Id, message.MessageId);
                             Logger.Trace($"[{nameof(AdminConsole)}] Sending password string deletion warning.");
-                            await _telegramBotClient.SendTextMessageAsync(message.From.Id, "_Мы удалили сообщение с вашим паролем для безопасности._", ParseMode.Markdown);
+                            await _telegramBotClient.SendTextMessageAsync(message.From.Id,
+                                "_Мы удалили сообщение с вашим паролем для безопасности._", ParseMode.Markdown);
                             await Authorize(message.From.Id, password);
+                            break;
+                        case "/signal":
+                            if (split.Length == 1)
+                            {
+                                Logger.Trace(
+                                    $"[{nameof(AdminConsole)}] signal command should contain at least 1 argument.");
+                                await _telegramBotClient.SendTextMessageAsync(message.From.Id,
+                                    $"Текущие сигнальные слова: '{(DynamicSettings.SignalWords is not null ? string.Join(", ", DynamicSettings.SignalWords) : " выключены")}'.\n\nЧтобы установить сигнальные слова укажите хотя бы одно слово после команды /signal. Предыдущие сигнальные слова перезатрутся.\n\nНевидимый символ *в начале строки* (например, _&#013_;) является сигнальным словом по умолчанию.");
+                                continue;
+                            }
+
+                            Logger.Trace($"[{nameof(AdminConsole)}] Setting signal words...");
+                            var signalWords = split.Skip(1).ToArray();
+                            DynamicSettings.SetSignalWords(signalWords);
+                            var currentSignalWordsString = string.Join(", ", DynamicSettings.SignalWords!);
+                            Logger.Trace($"[{nameof(AdminConsole)}] Signal words set. Current: '{currentSignalWordsString}'.");
+                            await _telegramBotClient.SendTextMessageAsync(message.From.Id, $"*Сигнальные слова установлены.* Текущие сигнальные слова: '{currentSignalWordsString.ToEscapedMarkdownString()}'.\n\nНевидимый символ *в начале строки* (например, _&#013_;) является сигнальным словом по умолчанию.{(!DynamicSettings.IsBotEnabled ? "\n\nНе забывайте, что бот сейчас выключен. Чтобы его включить, введите /enable." : string.Empty)}", ParseMode.Markdown);
+                            break;
+                        case "/disable_signal_words":
+                            Logger.Trace($"[{nameof(AdminConsole)}] Disabling signal words...");
+                            DynamicSettings.DisableSignalWords();
+                            Logger.Trace($"[{nameof(AdminConsole)}] Signal words disabled.");
+                            await _telegramBotClient.SendTextMessageAsync(message.From.Id,
+                                $"*Сигнальные слова выключены.* Теперь все посты будут репоститься. Чтобы установить сигнальные слова, введите /signal <слово> <слово> <слово> ... (без угловых скобок){(!DynamicSettings.IsBotEnabled ? "\n\nНе забывайте, что бот сейчас выключен. Чтобы его включить, введите /enable." : string.Empty)}",
+                                ParseMode.Markdown);
                             break;
                         case "/enable" when DynamicSettings.IsBotEnabled:
                             if (!await CheckAuth(message.From.Id))
@@ -104,6 +143,7 @@ public sealed class AdminConsole : IAsyncDisposable
                             Logger.Info($"[{nameof(AdminConsole)}] Enabling bot.");
                             DynamicSettings.IsBotEnabled = true;
                             await _telegramBotClient.SendTextMessageAsync(message.From.Id, "*Бот запущен.*", ParseMode.Markdown);
+                            await _telegramBotClient.SendTextMessageAsync(message.From.Id, DynamicSettings.ToUserMarkdownString(), ParseMode.Markdown);
                             break;
                         case "/disable" when !DynamicSettings.IsBotEnabled:
                             if (!await CheckAuth(message.From.Id))
@@ -116,7 +156,8 @@ public sealed class AdminConsole : IAsyncDisposable
                                 continue;
                             Logger.Info($"[{nameof(AdminConsole)}] Disabling bot.");
                             DynamicSettings.IsBotEnabled = false;
-                            await _telegramBotClient.SendTextMessageAsync(message.From.Id, "*Бот выключен.*", ParseMode.Markdown);
+                            await _telegramBotClient.SendTextMessageAsync(message.From.Id, "*Бот выключен.*",
+                                ParseMode.Markdown);
                             break;
                         default:
                             Logger.Info($"[{nameof(AdminConsole)}] Command don't exist.");
@@ -125,12 +166,13 @@ public sealed class AdminConsole : IAsyncDisposable
                             break;
                     }
                 }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "AdminConsole error occured.");
+                    await MailService.SendException(ex);
+                    await _telegramBotClient.SendTextMessageAsync(message.From.Id, $"Произошла ошибка. Сообщите о ней администратору.\n\nДетали:\n{ex}");
+                }
             }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "AdminConsole worker creshed. Please, restart the bot.");
-            }
-
         }, _cts.Token);
     }
 
@@ -152,7 +194,8 @@ public sealed class AdminConsole : IAsyncDisposable
         
         _authorizedIds.Add(userId);
         Logger.Info($"[{nameof(AdminConsole)}] Successful authorization: {userId}.");
-        await _telegramBotClient.SendTextMessageAsync(userId, $"*Вы успешно авторизованы!*\n\n{DynamicSettings.ToUserMarkdownString()}\n\n*Внимание!* Вы будете автоматически разлогинены через {Vk2TgConfig.Current.AutoLogoutIdlePeriodMinutes} минут бездействия.", ParseMode.Markdown);
+        await _telegramBotClient.SendTextMessageAsync(userId, $"*Вы успешно авторизованы!*\n\n*Внимание!* Вы будете автоматически разлогинены через *{Vk2TgConfig.Current.AutoLogoutIdlePeriodMinutes}* минут бездействия.", ParseMode.Markdown);
+        await _telegramBotClient.SendTextMessageAsync(userId, DynamicSettings.ToUserMarkdownString(), ParseMode.Markdown);
     }
 
     private async Task<bool> CheckAuth(long userId)
