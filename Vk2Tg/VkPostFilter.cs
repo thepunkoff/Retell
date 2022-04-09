@@ -11,21 +11,28 @@ public static class VkPostFilter
     {
         if (!DynamicSettings.IsBotEnabled)
         {
-            Logger.Info("Post won't be shown: bot is disabled.");
+            Logger.Info($"[{nameof(VkPostFilter)}] Post won't be shown: bot is disabled.");
             return false;
         }
 
         if (DynamicSettings.SignalWords is null)
             return true;
 
-        var signalWordFound = DynamicSettings.SignalWords.FirstOrDefault(x => vkWallPost.Text.Contains(x)) ?? (vkWallPost.Text.StartsWith(" ") ? "Unprinted symbol at the beginning of the text" : null);
+        string? textLowercase = null;
+        var signalWordFound = DynamicSettings.SignalWords.FirstOrDefault(x => Vk2TgConfig.Current.IgnoreSignalWordsCase
+            ? (textLowercase ??= vkWallPost.Text.ToLowerInvariant()).Contains(x)
+            : vkWallPost.Text.Contains(x))
+        ?? (vkWallPost.Text.StartsWith(" ")
+            ? "Unprinted symbol at the beginning of the text"
+            : null);
+
         if (signalWordFound is null)
         {
-            Logger.Info("Post won't be shown: signal words not found.");
+            Logger.Info($"[{nameof(VkPostFilter)}] Post won't be shown: signal words not found.");
             return false;
         }
 
-        Logger.Info($"Signal word found: '{signalWordFound}'. Showing post.");
+        Logger.Info($"[{nameof(VkPostFilter)}] Signal word found: '{signalWordFound}'. Showing post.");
 
         return true;
     }

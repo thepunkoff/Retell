@@ -39,8 +39,7 @@ public sealed class AdminConsole : IAsyncDisposable
                     TimeSpan.FromMinutes(Vk2TgConfig.Current.AutoLogoutIdlePeriodMinutes) && _authorizedIds.Count > 0)
                 {
                     _authorizedIds.Clear();
-                    Logger.Info(
-                        $"[{nameof(AdminConsole)}] Automatic logout triggered. All authorized users are no longer authorized.");
+                    Logger.Info($"[{nameof(AdminConsole)}] Automatic logout triggered. All authorized users are no longer authorized.");
                 }
 
                 _lastMessageTimestamp = DateTime.UtcNow;
@@ -59,13 +58,12 @@ public sealed class AdminConsole : IAsyncDisposable
 
                     if (message.Text is null)
                     {
-                        Logger.Error("Message.Text was null.");
+                        Logger.Error($"[{nameof(AdminConsole)}] Message.Text was null.");
                         await _telegramBotClient.SendTextMessageAsync(message.From.Id, "Error: message text is null.");
                         continue;
                     }
 
-                    Logger.Trace(
-                        $"Incoming command: '{(message.Text.Length > 100 ? message.Text[..100] : message.Text)}'.");
+                    Logger.Trace($"[{nameof(AdminConsole)}] Incoming command: '{(message.Text.Length > 100 ? message.Text[..100] : message.Text)}'.");
 
                     var split = message.Text.Split(" ");
                     switch (split[0])
@@ -121,7 +119,7 @@ public sealed class AdminConsole : IAsyncDisposable
                             DynamicSettings.SetSignalWords(signalWords);
                             var currentSignalWordsString = string.Join(", ", DynamicSettings.SignalWords!);
                             Logger.Trace($"[{nameof(AdminConsole)}] Signal words set. Current: '{currentSignalWordsString}'.");
-                            await _telegramBotClient.SendTextMessageAsync(message.From.Id, $"*Сигнальные слова установлены.* Текущие сигнальные слова: '{currentSignalWordsString.ToEscapedMarkdownString()}'.\n\nНевидимый символ *в начале строки* (например, _&#013_;) является сигнальным словом по умолчанию.{(!DynamicSettings.IsBotEnabled ? "\n\nНе забывайте, что бот сейчас выключен. Чтобы его включить, введите /enable." : string.Empty)}", ParseMode.Markdown);
+                            await _telegramBotClient.SendTextMessageAsync(message.From.Id, $"*Сигнальные слова установлены.* Текущие сигнальные слова: '{currentSignalWordsString.ToEscapedMarkdownString()}'.\n\nРегистр слов при проверке {(Vk2TgConfig.Current.IgnoreSignalWordsCase ? "не учитывается" : "учитывается")}.\n\nНевидимый символ *в начале строки* (например, _&#013_;) является сигнальным словом по умолчанию.{(!DynamicSettings.IsBotEnabled ? "\n\nНе забывайте, что бот сейчас выключен. Чтобы его включить, введите /enable." : string.Empty)}", ParseMode.Markdown);
                             break;
                         case "/disable_signal_words":
                             Logger.Trace($"[{nameof(AdminConsole)}] Disabling signal words...");

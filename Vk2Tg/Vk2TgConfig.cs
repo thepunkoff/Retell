@@ -13,6 +13,8 @@ namespace Vk2Tg
 
         public string AdminPassword { get; set; }
 
+        public bool IgnoreSignalWordsCase { get; set; }
+
         public int AutoLogoutIdlePeriodMinutes { get; set; }
         public GifMediaGroupMode GifMediaGroupMode { get; set; } = GifMediaGroupMode.Auto;
 

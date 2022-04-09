@@ -133,9 +133,9 @@ namespace Vk2Tg
 
                 var tgElement = CreateTgElement(update.WallPost);
                     
-                Logger.Trace("Rendering TgElement...");
+                Logger.Debug("Rendering TgElement...");
                 await tgElement.Render(new TgRenderContext(_tgBotClient, _config.TelegramChatId, _httpClient), default);
-                Logger.Trace("TgElement rendered.");
+                Logger.Debug("TgElement rendered.");
             }
         }
 
