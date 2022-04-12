@@ -3,6 +3,7 @@ using NLog;
 using Telegram.Bot;
 using Vk2Tg.Admin;
 using Vk2Tg.Elements;
+using Vk2Tg.Filtering;
 using VkNet;
 using VkNet.AudioBypassService.Extensions;
 using VkNet.Enums.Filters;
@@ -128,7 +129,9 @@ namespace Vk2Tg
 
                 Logger.Info($"New community wall post detected: '{shortPostString}'");
 
-                if (!VkPostFilter.ShouldShow(update.WallPost))
+                var filteringResult = VkPostFilter.Filter(update.WallPost);
+                Logger.Info($"Filtering result: {filteringResult}");
+                if (filteringResult is not FilteringResult.ShouldShow)
                     continue;
 
                 var tgElement = CreateTgElement(update.WallPost);
@@ -191,8 +194,12 @@ namespace Vk2Tg
 
             if (!string.IsNullOrWhiteSpace(wallPost.Text))
             {
-                ret = ret.AddText(new TgText(wallPost.Text));
-                Logger.Debug($"Added text. Result: {ret}.");
+                var text = Vk2TgConfig.Current.ClearHashtags
+                    ? wallPost.Text.RemoveHashtags()
+                    : wallPost.Text;
+
+                ret = ret.AddText(new TgText(text));
+                Logger.Debug($"Added text.{(Vk2TgConfig.Current.ClearHashtags ? " Removed hashtags." : string.Empty)} Result: {ret}.");
             }
 
             foreach (var attachment in wallPost.Attachments)

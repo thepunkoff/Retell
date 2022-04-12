@@ -1,22 +1,19 @@
 ﻿using NLog;
 using VkNet.Model.GroupUpdate;
 
-namespace Vk2Tg;
+namespace Vk2Tg.Filtering;
 
 public static class VkPostFilter
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-    public static bool ShouldShow(WallPost vkWallPost)
+    public static FilteringResult Filter(WallPost vkWallPost)
     {
         if (!DynamicSettings.IsBotEnabled)
-        {
-            Logger.Info($"[{nameof(VkPostFilter)}] Post won't be shown: bot is disabled.");
-            return false;
-        }
+            return FilteringResult.BotDisabled;
 
         if (DynamicSettings.SignalWords is null)
-            return true;
+            return FilteringResult.ShouldShow;
 
         string? textLowercase = null;
         var signalWordFound = DynamicSettings.SignalWords.FirstOrDefault(x => Vk2TgConfig.Current.IgnoreSignalWordsCase
@@ -27,13 +24,8 @@ public static class VkPostFilter
             : null);
 
         if (signalWordFound is null)
-        {
-            Logger.Info($"[{nameof(VkPostFilter)}] Post won't be shown: signal words not found.");
-            return false;
-        }
+            return FilteringResult.SignalWordsNotFound;
 
-        Logger.Info($"[{nameof(VkPostFilter)}] Signal word found: '{signalWordFound}'. Showing post.");
-
-        return true;
+        return FilteringResult.ShouldShow;
     }
 }

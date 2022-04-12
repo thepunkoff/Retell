@@ -36,4 +36,9 @@ public static class Helpers
             .Replace("[", "\\[")
             .Replace("`", "\\`");
     }
+
+    public static string RemoveHashtags(this string s)
+    {
+        return Regex.Replace(s, @"#[^\s]+", string.Empty);
+    }
 }
