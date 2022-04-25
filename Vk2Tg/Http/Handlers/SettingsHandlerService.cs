@@ -1,23 +1,32 @@
 ﻿using System.Net;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using NLog;
 
 namespace Vk2Tg.Http.Handlers;
 
-public class SettingsHandler
+public class SettingsHandlerService
 {
-    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private readonly ILogger<SettingsHandlerService> _logger;
+    private readonly IConfiguration _configuration;
+    public SettingsHandlerService(ILogger<SettingsHandlerService> logger, IConfiguration configuration)
+    {
+        _logger = logger;
+        _configuration = configuration;
+
+    }
 
     public async Task HandleSettingsRequest(HttpListenerContext context)
     {
         if (await Handle(context))
-            Logger.Trace($"[{nameof(SettingsHandler)}] Settings request processed. Ok.");
+            _logger.LogTrace("Settings request processed. Ok");
         else
-            Logger.Trace($"[{nameof(SettingsHandler)}] Settings request processed. Bad Request.");
+            _logger.LogTrace("Settings request processed. Bad Request");
     }
     
     private async Task<bool> Handle(HttpListenerContext context)
     {
-        Logger.Trace($"[{nameof(SettingsHandler)}] processing settings request...");
+        _logger.LogTrace("processing settings request...");
 
         var queryString = context.Request.QueryString;
         if (queryString.Keys.Count == 0)
@@ -34,57 +43,56 @@ public class SettingsHandler
                 var values = queryString.GetValues(i);
                 if (values is null || values.Length == 0)
                 {
-                    var message = $"Query string key '{key}' was null or contained no values.";
-                    Logger.Trace(message);
-                    await context.Response.ReturnBadRequest(message);
+                    _logger.LogTrace("Query string key '{Key}' was null or contained no values", key);
+                    await context.Response.ReturnBadRequest("Query string key '{key}' was null or contained no values.");
                     return false;
                 }
         
                 var value = values[0];
                 if (string.IsNullOrWhiteSpace(value))
                 {
-                    var message = $"Value of query string key '{key}' was null or empty.";
-                    Logger.Trace(message);
-                    await context.Response.ReturnBadRequest(message);
+                    _logger.LogTrace("Value of query string key '{Key}' was null or empty", key);
+                    await context.Response.ReturnBadRequest($"Value of query string key '{key}' was null or empty.");
                     return false;
                 }
 
+                var botEnabledSection = _configuration.GetSection("isBotEnabled");
+                var botEnabled = botEnabledSection.Get<bool>();
                 switch (value.ToLowerInvariant())
                 {
                     case "true":
-                        if (DynamicSettings.IsBotEnabled)
+                        if (botEnabled)
                         {
-                            Logger.Info($"[{nameof(SettingsHandler)}] Bot already enabled.");
+                            _logger.LogInformation("Bot already enabled");
                         }
                         else
                         {
-                            Logger.Info($"[{nameof(SettingsHandler)}] Enabling bot.");
-                            DynamicSettings.IsBotEnabled = true;
+                            _logger.LogInformation("Enabling bot");
+                            botEnabledSection.Value = "true";
                         }
                         break;
                     case "false":
-                        if (!DynamicSettings.IsBotEnabled)
+                        if (botEnabled)
                         {
-                            Logger.Info($"[{nameof(SettingsHandler)}] Bot already disabled.");
+                            _logger.LogInformation("Disabling bot");
+                            botEnabledSection.Value = "false";
                         }
                         else
                         {
-                            Logger.Info($"[{nameof(SettingsHandler)}] Disabling bot.");
-                            DynamicSettings.IsBotEnabled = false;
+                            _logger.LogInformation("Bot already disabled");
                         }
                         break;
                     default:
                         const string message = "Value of query string key 'enabled' could be either 'true' or 'false'.";
-                        Logger.Trace(message);
+                        _logger.LogTrace(message);
                         await context.Response.ReturnBadRequest(message);
                         return false;
                 }
             }
             else
             {
-                var message = $"Invalid setting key: '{key}'. Try 'enabled'.";
-                Logger.Trace(message);
-                await context.Response.ReturnBadRequest(message);
+                _logger.LogTrace("Invalid setting key: '{Key}'. Try 'enabled'", key);
+                await context.Response.ReturnBadRequest($"Invalid setting key: '{key}'. Try 'enabled'.");
                 return false;
             }
         }

@@ -365,7 +365,7 @@ public class Tests
         Assert.AreEqual(new[] { tVideo, new DebugRenderToken(DebugRenderTokenType.LongText, tVideo), new DebugRenderToken(DebugRenderTokenType.Gif) }, result.DebugRender());
         
         // Short caption (TextUp mode)
-        Vk2TgConfig.Current = new Vk2TgConfig { GifMediaGroupMode = GifMediaGroupMode.TextUp };
+        TgElement.MediaGroupMode = GifMediaGroupMode.TextUp;
         
         result = photoShortCaption.AddElement(gif);
         Assert.AreEqual(new[] { new DebugRenderToken(DebugRenderTokenType.TextWithHtmlPhoto), new DebugRenderToken(DebugRenderTokenType.Gif) }, result.DebugRender());

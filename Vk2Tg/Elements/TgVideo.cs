@@ -53,7 +53,7 @@ public class TgVideo : TgElement, IMediaGroupElement
         if (Caption is null)
             return new TgCompoundElement(this, gif);
 
-        if (Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
+        if (MediaGroupMode is GifMediaGroupMode.TextUp)
             return new TgCompoundElement(new TgVideo(Url, Caption, textUp: true), gif);
 
         return Caption.Length <= 1024
