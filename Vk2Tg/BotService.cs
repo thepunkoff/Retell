@@ -43,7 +43,6 @@ public partial class BotService : BackgroundService
         _httpClient = httpClient;
         _reportService = reportService;
         _postFilterService = postFilterService;
-        vkUpdateSourceService.GroupUpdate += VkUpdateSourceServiceOnGroupUpdate;
     }
     
 #region Logging
@@ -76,7 +75,10 @@ public partial class BotService : BackgroundService
         {
             try
             {
-                await _vkUpdateSourceService.StartReceiveLoopAsync(stoppingToken);
+                await foreach (var groupUpdate in _vkUpdateSourceService.GetGroupUpdatesAsync(stoppingToken))
+                {
+                    await ProcessGroupUpdate(groupUpdate);
+                }
             }
             catch (Exception e)
             {
@@ -86,7 +88,7 @@ public partial class BotService : BackgroundService
         }
     }
     
-    private async Task VkUpdateSourceServiceOnGroupUpdate(GroupUpdate update)
+    private async Task ProcessGroupUpdate(GroupUpdate update)
     {
         if (update.WallPost is null)
             return;

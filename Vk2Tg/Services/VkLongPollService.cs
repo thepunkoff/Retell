@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Vk2Tg.Abstractions.Services;
 using VkNet.Abstractions;
@@ -29,7 +30,7 @@ public partial class VkLongPollService : IVkUpdateSourceService
     partial void LogLpHistoryError(int errorCode, string message);
 #endregion
 
-    public async Task StartReceiveLoopAsync(CancellationToken cancellationToken)
+    public async IAsyncEnumerable<GroupUpdate> GetGroupUpdatesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
     {
         _logger.LogTrace("Getting long poll server...");
         var response = await _vkApi.Groups.GetLongPollServerAsync(_groupId);
@@ -43,16 +44,16 @@ public partial class VkLongPollService : IVkUpdateSourceService
         while (!cancellationToken.IsCancellationRequested)
         {
             var longPollResponse = await GetNextLongPollResponse();
-            if (longPollResponse is not null && GroupUpdate is not null)
-                foreach (var groupUpdate in longPollResponse.Updates)
-                {
-                    await GroupUpdate.Invoke(groupUpdate);
-                }
-
-            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            
+            if (longPollResponse is null)
+                continue;
+            
+            foreach (var groupUpdate in longPollResponse.Updates)
+            {
+                yield return groupUpdate;
+            }
         }
     }
-    public event Func<GroupUpdate, Task>? GroupUpdate;
     
     private async Task<BotsLongPollHistoryResponse?> GetNextLongPollResponse()
     {
