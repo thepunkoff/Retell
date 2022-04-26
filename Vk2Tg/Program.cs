@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 using Telegram.Bot;
 using Vk2Tg;
+using Vk2Tg.Abstractions.Services;
 using Vk2Tg.Admin;
 using Vk2Tg.Configuration;
 using Vk2Tg.Filtering;

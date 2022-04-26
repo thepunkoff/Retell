@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types.Enums;
+using Vk2Tg.Abstractions.Services;
 using Vk2Tg.Configuration;
 using Vk2Tg.Services;
 

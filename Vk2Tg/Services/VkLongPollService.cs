@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Vk2Tg.Abstractions.Services;
 using VkNet.Abstractions;
 using VkNet.Exception;
 using VkNet.Model;

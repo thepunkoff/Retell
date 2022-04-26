@@ -1,4 +1,4 @@
-﻿namespace Vk2Tg.Services;
+﻿namespace Vk2Tg.Abstractions.Services;
 
 public interface IExceptionReportService
 {

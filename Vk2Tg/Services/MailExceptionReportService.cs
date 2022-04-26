@@ -3,6 +3,7 @@ using System.Net.Mail;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Vk2Tg.Abstractions.Services;
 using Vk2Tg.Configuration;
 namespace Vk2Tg.Services
 {

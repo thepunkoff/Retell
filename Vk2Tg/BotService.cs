@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
+using Vk2Tg.Abstractions.Services;
 using Vk2Tg.Configuration;
 using Vk2Tg.Elements;
 using Vk2Tg.Filtering;
