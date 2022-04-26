@@ -15,7 +15,7 @@ using VkNet.Model.RequestParams;
 
 namespace Vk2Tg;
 
-public class BotService : BackgroundService
+public partial class BotService : BackgroundService
 {
     private readonly IVkApi _vkApi;
     private readonly ILogger<BotService> _logger;
@@ -44,6 +44,15 @@ public class BotService : BackgroundService
         _postFilterService = postFilterService;
         vkUpdateSourceService.GroupUpdate += VkUpdateSourceServiceOnGroupUpdate;
     }
+    
+#region Logging
+    [LoggerMessage(1, LogLevel.Information, "New community wall post detected: '{ShortPostString}'")]
+    partial void LogNewCommunityPost(string shortPostString);
+    [LoggerMessage(2, LogLevel.Information, "Filtering result: {FilteringResult}")]
+    partial void LogFilteringResult(FilteringResult filteringResult);
+    [LoggerMessage(3, LogLevel.Debug, "Added {ElementName}. Result: {Element}")]
+    partial void LogAddedElement(string elementName, TgElement element);
+#endregion
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -96,10 +105,10 @@ public class BotService : BackgroundService
                 : update.WallPost.Text
             : "no text in post";
 
-        _logger.LogInformation("New community wall post detected: '{ShortPostString}'", shortPostString);
+        LogNewCommunityPost(shortPostString);
 
         var filteringResult = _postFilterService.Filter(update.WallPost);
-        _logger.LogInformation("Filtering result: {FilteringResult}", filteringResult);
+        LogFilteringResult(filteringResult);
         if (filteringResult is not FilteringResult.ShouldShow)
             return;
 
@@ -124,7 +133,7 @@ public class BotService : BackgroundService
                 : post.Text;
 
             ret = ret.AddText(new TgText(text));
-            _logger.LogDebug("Added text.{Message} Result: {Ret}", clearHashtags ? " Removed hashtags." : string.Empty, ret);
+            LogAddedElement(clearHashtags ? "text. Removed hashtags" : "text", ret);
         }
 
         TgElement.MediaGroupMode = _configuration.GetSection("gifMediaGroupMode").Get<GifMediaGroupMode>();
@@ -134,24 +143,24 @@ public class BotService : BackgroundService
             {
                 case Photo photo:
                     ret = ret.AddPhoto(new TgPhoto(photo.Sizes.Last().Url));
-                    _logger.LogDebug("Added photo. Result: {Ret}", ret);
+                    LogAddedElement("photo", ret);
                     break;
                 case Video video:
                     var videoCollection = _vkApi.Video.Get(new VideoGetParams {Videos = new[] {video}});
                     ret = ret.AddVideo(new TgVideo(ChoseBestQualityUrl(videoCollection[0])));
-                    _logger.LogDebug("Added video. Result: {Ret}", ret);
+                    LogAddedElement("video", ret);
                     break;
                 case Poll poll:
                     ret = ret.AddPoll(new TgPoll(poll.Question, poll.Answers.Select(x => x.Text).ToArray(), poll.Multiple ?? false));
-                    _logger.LogDebug("Added poll. Result: {Ret}", ret);
+                    LogAddedElement("poll", ret);
                     break;
                 case Link link:
                     ret = ret.AddLink(new TgLink(link.Uri.ToString()));
-                    _logger.LogDebug("Added link. Result: {Ret}", ret);
+                    LogAddedElement("link", ret);
                     break;
                 case Document {Ext: "gif"} doc:
                     ret = ret.AddGif(new TgGif(new Uri(doc.Uri)));
-                    _logger.LogDebug("Added gif. Result: {Ret}", ret);
+                    LogAddedElement("gif", ret);
                     break;
             }
         }

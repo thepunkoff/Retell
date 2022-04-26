@@ -7,7 +7,7 @@ using VkNet.Model.GroupUpdate;
 
 namespace Vk2Tg.Services;
 
-public class VkLongPollService : IVkUpdateSourceService
+public partial class VkLongPollService : IVkUpdateSourceService
 {
     private readonly IVkApi _vkApi;
     private readonly ILogger<VkLongPollService> _logger;
@@ -23,6 +23,10 @@ public class VkLongPollService : IVkUpdateSourceService
         _logger = logger;
         _groupId = configuration.GetSection("vkGroupId").Get<ulong>();
     }
+#region Logging
+    [LoggerMessage(1, LogLevel.Error, "Long poll history request failed. Trying again. (error code: {ErrorCode}, message: {Message})")]
+    partial void LogLpHistoryError(int errorCode, string message);
+#endregion
 
     public async Task StartReceiveLoopAsync(CancellationToken cancellationToken)
     {
@@ -85,8 +89,7 @@ public class VkLongPollService : IVkUpdateSourceService
         }
         catch (VkApiMethodInvokeException apiEx) when (apiEx.Message.ToLowerInvariant().Contains("unknown application"))
         {
-            _logger.LogError("Long poll history request failed. Trying again. (error code: {ErrorCode}, message: {Message})", 
-                apiEx.ErrorCode, apiEx.Message);
+            LogLpHistoryError(apiEx.ErrorCode, apiEx.Message);
             throw;
         }
     

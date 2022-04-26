@@ -6,7 +6,7 @@ using Vk2Tg.Http.Handlers;
 
 namespace Vk2Tg.Http
 {
-    public class HttpServerService : BackgroundService
+    public partial class HttpServerService : BackgroundService
     {
         private readonly int _port;
         private readonly HttpListener _httpListener = new();
@@ -20,6 +20,13 @@ namespace Vk2Tg.Http
             _settingsHandlerService = settingsHandlerService;
             _logger = logger;
         }
+#region Logging
+        [LoggerMessage(1, LogLevel.Information, "Incoming request: '{Url}' from {Endpoint}")]
+        partial void LogIncomingRequest(Uri url, IPEndPoint endpoint);
+        [LoggerMessage(2, LogLevel.Trace, "Raw url was '{RawUrl}'. responding 400 bad request")]
+        partial void LogUnknownUrl(string? url);
+#endregion
+        
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _httpListener.Prefixes.Add($"http://*:{_port}/");
@@ -45,7 +52,7 @@ namespace Vk2Tg.Http
                 }
                     
                 if (request.Url.AbsolutePath != "/favicon.ico")
-                    _logger.LogInformation("Incoming request: '{Url}' from {Endpoint}", request.Url, request.RemoteEndPoint);
+                    LogIncomingRequest(request.Url, request.RemoteEndPoint);
 
                 switch (request.Url.AbsolutePath)
                 {
@@ -68,7 +75,7 @@ namespace Vk2Tg.Http
                     }
                     default:
                     {
-                        _logger.LogTrace("Raw url was '{RawUrl}'. responding 400 bad request", request.RawUrl);
+                        LogUnknownUrl(request.RawUrl);
                         await context.Response.ReturnBadRequest($"Endpoint '{request.Url.AbsolutePath}' not found. Try '/status' or '/settings'.");
                         break;
                     }

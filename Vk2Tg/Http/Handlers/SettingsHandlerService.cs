@@ -2,10 +2,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NLog;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Vk2Tg.Http.Handlers;
 
-public class SettingsHandlerService
+public partial class SettingsHandlerService
 {
     private readonly ILogger<SettingsHandlerService> _logger;
     private readonly IConfiguration _configuration;
@@ -15,6 +16,14 @@ public class SettingsHandlerService
         _configuration = configuration;
 
     }
+#region Logging
+    [LoggerMessage(1, LogLevel.Trace, "Invalid setting key: '{Key}'. Try 'enabled'")]
+    partial void LogInvalidSettingsKey(string? key);
+    [LoggerMessage(2, LogLevel.Trace, "Query string key '{Key}' was null or contained no values")]
+    partial void LogQueryStringKeyIsNullOrEmpty(string? key);
+    [LoggerMessage(3, LogLevel.Trace, "Value of query string key '{Key}' was null or empty")]
+    partial void LogValueOfQueryStringKeyIsNullOrEmpty(string? key);
+#endregion
 
     public async Task HandleSettingsRequest(HttpListenerContext context)
     {
@@ -43,7 +52,7 @@ public class SettingsHandlerService
                 var values = queryString.GetValues(i);
                 if (values is null || values.Length == 0)
                 {
-                    _logger.LogTrace("Query string key '{Key}' was null or contained no values", key);
+                    LogQueryStringKeyIsNullOrEmpty(key);
                     await context.Response.ReturnBadRequest("Query string key '{key}' was null or contained no values.");
                     return false;
                 }
@@ -51,7 +60,7 @@ public class SettingsHandlerService
                 var value = values[0];
                 if (string.IsNullOrWhiteSpace(value))
                 {
-                    _logger.LogTrace("Value of query string key '{Key}' was null or empty", key);
+                    LogValueOfQueryStringKeyIsNullOrEmpty(key);
                     await context.Response.ReturnBadRequest($"Value of query string key '{key}' was null or empty.");
                     return false;
                 }
@@ -91,7 +100,7 @@ public class SettingsHandlerService
             }
             else
             {
-                _logger.LogTrace("Invalid setting key: '{Key}'. Try 'enabled'", key);
+                LogInvalidSettingsKey(key);
                 await context.Response.ReturnBadRequest($"Invalid setting key: '{key}'. Try 'enabled'.");
                 return false;
             }
