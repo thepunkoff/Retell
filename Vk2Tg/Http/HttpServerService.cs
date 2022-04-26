@@ -6,6 +6,7 @@ using Vk2Tg.Http.Handlers;
 
 namespace Vk2Tg.Http
 {
+    // TODO: move to ASP.NET Core minimal api
     public partial class HttpServerService : BackgroundService
     {
         private readonly int _port;
