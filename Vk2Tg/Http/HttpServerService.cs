@@ -25,7 +25,7 @@ namespace Vk2Tg.Http
         [LoggerMessage(1, LogLevel.Information, "Incoming request: '{Url}' from {Endpoint}")]
         partial void LogIncomingRequest(Uri url, IPEndPoint endpoint);
         [LoggerMessage(2, LogLevel.Trace, "Raw url was '{RawUrl}'. responding 400 bad request")]
-        partial void LogUnknownUrl(string? url);
+        partial void LogUnknownUrl(string? rawUrl);
 #endregion
         
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
