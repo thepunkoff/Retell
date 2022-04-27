@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using NLog;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types.Enums;
 using Vk2Tg.Abstractions.Services;
@@ -64,7 +66,7 @@ public sealed class AdminConsoleService : BackgroundService
         if (_authorizedIds.Contains(userId))
             return true;
 
-        _logger.LogInformation("Unauthorized user");
+        _logger.LogInformation($"Unauthorized user.");
         await _telegramBotClient.SendTextMessageAsync(userId, "Вы не авторизованы. Авторизуйтель, отправив '/login <пароль>' (без угловых скобок).");
         return false;
     }
