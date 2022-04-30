@@ -33,7 +33,7 @@ public class TgGif : TgElement
         if (Caption is null)
             return new TgCompoundElement(photo, this);
 
-        if (Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
+        if (MediaGroupMode is GifMediaGroupMode.TextUp)
             return new TgCompoundElement(new TgPhoto(photo.Url, Caption, textUp: true), new TgGif(Url));
 
         return Caption.Length <= 1024
@@ -49,7 +49,7 @@ public class TgGif : TgElement
         if (Caption is null)
             return new TgCompoundElement(video, this);
 
-        if (Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
+        if (MediaGroupMode is GifMediaGroupMode.TextUp)
             return new TgCompoundElement(new TgVideo(video.Url, Caption, textUp: true), new TgGif(Url));
 
         return Caption.Length <= 1024
@@ -72,7 +72,7 @@ public class TgGif : TgElement
         if (gif.Caption is not null)
             throw new NotSupportedException("Adding non null caption when merging gif is not supported.");
         
-        if (Caption is null || Vk2TgConfig.Current.GifMediaGroupMode is GifMediaGroupMode.TextUp)
+        if (Caption is null || MediaGroupMode is GifMediaGroupMode.TextUp)
             return new TgCompoundElement(this, gif);
 
         return Caption.Length <= 1024

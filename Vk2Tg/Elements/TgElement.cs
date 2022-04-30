@@ -2,6 +2,8 @@
 
 public abstract class TgElement
 {
+    public static GifMediaGroupMode MediaGroupMode = GifMediaGroupMode.Auto;
+    
     public TgElement AddElement(TgElement other)
     {
         return other switch
