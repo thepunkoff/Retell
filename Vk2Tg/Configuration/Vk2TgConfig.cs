@@ -17,7 +17,10 @@ namespace Vk2Tg.Configuration
         public int AutoLogoutIdlePeriodMinutes { get; set; }
         public GifMediaGroupMode GifMediaGroupMode { get; set; } = GifMediaGroupMode.Auto;
 
-        public bool IsBotEnabled { get; set; } = true;
+        public bool IsBotEnabled { get; set; }
+#if DEBUG
+            = true;
+#endif
 
         public string[]? SignalWords { get; set; }
         
