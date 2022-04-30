@@ -70,8 +70,25 @@ public sealed class AdminConsoleService : BackgroundService
         await _telegramBotClient.SendTextMessageAsync(userId, "Вы не авторизованы. Авторизуйтель, отправив '/login <пароль>' (без угловых скобок).");
         return false;
     }
+
+    private async Task CheckApiAvailability(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _telegramBotClient.GetMeAsync(cancellationToken);
+        }
+        catch (ApiRequestException ex)
+        {
+            if (ex.ErrorCode == 404)
+                _logger.LogError("Invalid telegram bot token");
+            throw;
+        }
+    }
+    
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await CheckApiAvailability(stoppingToken);
+        
         await foreach (var update in _updateReceiver.WithCancellation(stoppingToken))
         {
             if (_lastMessageTimestamp != DateTime.UtcNow &&
