@@ -9,6 +9,7 @@ using Vk2Tg.Filtering;
 using Vk2Tg.Services;
 using VkNet.Abstractions;
 using VkNet.Enums.Filters;
+using VkNet.Exception;
 using VkNet.Model;
 using VkNet.Model.Attachments;
 using VkNet.Model.GroupUpdate;
@@ -70,6 +71,11 @@ public class BotService : BackgroundService
                 {
                     await ProcessGroupUpdate(groupUpdate);
                 }
+            }
+            catch (UserAuthorizationFailException e)
+            {
+                await _reportService.SendExceptionAsync(e);
+                throw;
             }
             catch (Exception e)
             {
