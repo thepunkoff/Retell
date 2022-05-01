@@ -1,6 +1,7 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.InputFiles;
+using Vk2Tg.Models;
 
 namespace Vk2Tg.Elements;
 
@@ -49,7 +50,7 @@ public class TgVideo : TgElement, IMediaGroupElement
     {
         if (gif.Caption is not null)
             throw new NotSupportedException("Adding non null caption when merging gif is not supported.");
-        
+
         if (Caption is null)
             return new TgCompoundElement(this, gif);
 
@@ -80,7 +81,7 @@ public class TgVideo : TgElement, IMediaGroupElement
             await SendOneMessage(context, token);
             return;
         }
-            
+
         await SendVideoReplyWithText(context, token);
     }
 
@@ -92,21 +93,21 @@ public class TgVideo : TgElement, IMediaGroupElement
             async t => await context.BotClient.SendVideoAsync(context.ChatId, inputOnlineFile, caption: Caption, cancellationToken: t),
             token);
     }
-    
+
     private async Task SendTextReplyWithVideo(TgRenderContext context, CancellationToken token)
     {
         Message? firstPart = null;
         await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
             async t => { firstPart = await context.BotClient.SendTextMessageAsync(context.ChatId, Caption!, cancellationToken: t); },
             token);
-                
+
         await using var stream = await context.HttpClient.GetStreamAsync(Url, token);
         var inputOnlineFile = new InputOnlineFile(stream);
         await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
             async t => { await context.BotClient.SendVideoAsync(context.ChatId, inputOnlineFile, cancellationToken: t,  replyToMessageId: firstPart!.MessageId); },
             token);
     }
-    
+
     private async Task SendVideoReplyWithText(TgRenderContext context, CancellationToken token)
     {
         Message? firstPart = null;
@@ -129,13 +130,13 @@ public class TgVideo : TgElement, IMediaGroupElement
         if (_textUp)
         {
             var text = new DebugRenderToken(Caption.Length <= 1024 ? DebugRenderTokenType.ShortText : DebugRenderTokenType.LongText);
-            var tokens = new[] { text, new DebugRenderToken(DebugRenderTokenType.Video, text) }; 
+            var tokens = new[] { text, new DebugRenderToken(DebugRenderTokenType.Video, text) };
             return tokens;
         }
 
         if (Caption.Length <= 1024)
             return new[] { new DebugRenderToken(DebugRenderTokenType.VideoWithCaption) };
-            
+
         var video = new DebugRenderToken(DebugRenderTokenType.Video);
         return new[] { video, new DebugRenderToken(Caption.Length <= 1024 ? DebugRenderTokenType.ShortText : DebugRenderTokenType.LongText, video) };
     }

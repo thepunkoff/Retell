@@ -1,6 +1,7 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InputFiles;
+using Vk2Tg.Models;
 
 namespace Vk2Tg.Elements;
 
@@ -12,7 +13,7 @@ public class TgPhoto : TgElement, IMediaGroupElement
     public string? Caption { get; set; }
 
     public MediumType Type => MediumType.Photo;
-    
+
     public TgPhoto(Uri url, string? caption = null, bool textUp = false)
     {
         Url = url;
@@ -49,7 +50,7 @@ public class TgPhoto : TgElement, IMediaGroupElement
     {
         if (gif.Caption is not null)
             throw new NotSupportedException("Adding non null caption when merging gif is not supported.");
-        
+
         if (Caption is null)
             return new TgCompoundElement(this, gif);
 

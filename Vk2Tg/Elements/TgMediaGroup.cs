@@ -2,14 +2,15 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Vk2Tg.Models;
 
 namespace Vk2Tg.Elements;
 
 public class TgMediaGroup : TgElement
 {
     private readonly List<IMediaGroupElement> _media = new ();
-    private readonly bool _textUp; 
-    
+    private readonly bool _textUp;
+
     public TgMediaGroup(IEnumerable<IMediaGroupElement> media, bool textUp = false)
     {
         _media.AddRange(media);
@@ -59,12 +60,12 @@ public class TgMediaGroup : TgElement
         var mediaStreams = new List<Stream>();
         var inputMedia = new List<IAlbumInputMedia>();
 
-        // TODO: merge all captions to the first, so that it was visible 
+        // TODO: merge all captions to the first, so that it was visible
         foreach (var medium in _media)
         {
             var stream = await context.HttpClient.GetStreamAsync(medium.Url, token);
             mediaStreams.Add(stream);
-            
+
             var inputMedium = new InputMedia(stream, RandomNumberGenerator.GetInt32(int.MinValue, int.MaxValue).ToString());
             inputMedia.Add(medium.Type switch
             {
@@ -104,14 +105,14 @@ public class TgMediaGroup : TgElement
             await stream.DisposeAsync();
         }
     }
-    
+
     private async Task SendOneMessage(TgRenderContext context, List<IAlbumInputMedia> inputMedia, CancellationToken token)
     {
         await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
             async t => await context.BotClient.SendMediaGroupAsync(context.ChatId, inputMedia, cancellationToken: t),
             token);
     }
-    
+
     private async Task SendTextReplyWithMediaGroup(TgRenderContext context, List<IAlbumInputMedia> inputMedia, CancellationToken token)
     {
         var text = inputMedia[0].Caption!;
@@ -123,14 +124,14 @@ public class TgMediaGroup : TgElement
         };
 
         Message? firstPart = null;
-        
+
         await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
             async t =>
             {
                 firstPart = await context.BotClient.SendTextMessageAsync(context.ChatId, text, cancellationToken: t);
             },
             token);
-        
+
         await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
             async t =>
             {
@@ -138,7 +139,7 @@ public class TgMediaGroup : TgElement
             },
             token);
     }
-    
+
     private async Task SendMediaGroupReplyWithText(TgRenderContext context, List<IAlbumInputMedia> inputMedia, CancellationToken token)
     {
         var text = inputMedia[0].Caption!;
@@ -157,7 +158,7 @@ public class TgMediaGroup : TgElement
                 firstPart = msgs[0];
             },
             token);
-            
+
         await Helpers.TelegramRetryForeverPolicy.ExecuteAsync(
             async t =>
             {
@@ -170,14 +171,14 @@ public class TgMediaGroup : TgElement
     {
         if (_media[0].Caption is null)
             return new[] { new DebugRenderToken(DebugRenderTokenType.MediaGroup) };
-        
+
         if (_textUp)
         {
             var text = new DebugRenderToken(_media[0].Caption!.Length <= 1024 ? DebugRenderTokenType.ShortText : DebugRenderTokenType.LongText);
-            var tokens = new[] { text, new DebugRenderToken(DebugRenderTokenType.MediaGroup, text) }; 
+            var tokens = new[] { text, new DebugRenderToken(DebugRenderTokenType.MediaGroup, text) };
             return tokens;
         }
-        
+
         if (_media[0].Caption!.Length <= 1024)
             return new[] { new DebugRenderToken(DebugRenderTokenType.MediaGroupWithCaption) };
 
@@ -191,10 +192,10 @@ public class TgMediaGroup : TgElement
 
         if (_media[0].Caption is null)
             return $"[Media group: {mediaString}]";
-        
+
         if (_textUp)
             return $"{(_media[0].Caption!.Length <= 1024 ? "[Short text" : "[Long text")} replied by a media group {mediaString}]";
-        
+
         return _media[0].Caption!.Length <= 1024
             ? $"[Media group with caption: {mediaString}]"
             : $"[Media group: {mediaString}. Replied by a long text]";
