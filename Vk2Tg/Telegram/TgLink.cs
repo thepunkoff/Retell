@@ -1,6 +1,7 @@
 ﻿using Telegram.Bot;
+using Vk2Tg.Elements;
 
-namespace Vk2Tg.Elements;
+namespace Vk2Tg.Telegram;
 
 public class TgLink : TgElement
 {

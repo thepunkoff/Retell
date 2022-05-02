@@ -3,15 +3,16 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Vk2Tg.Core.Models;
+using Vk2Tg.Elements;
 
-namespace Vk2Tg.Elements;
+namespace Vk2Tg.Telegram;
 
 public class TgMediaGroup : TgElement
 {
-    private readonly List<IMediaGroupElement> _media = new ();
+    private readonly List<ITgMediaGroupElement> _media = new ();
     private readonly bool _textUp;
 
-    public TgMediaGroup(IEnumerable<IMediaGroupElement> media, bool textUp = false)
+    public TgMediaGroup(IEnumerable<ITgMediaGroupElement> media, bool textUp = false)
     {
         _media.AddRange(media);
         _textUp = textUp;
@@ -53,7 +54,7 @@ public class TgMediaGroup : TgElement
         return new TgCompoundElement(this, gif);
     }
 
-    public void AddMedium(IMediaGroupElement medium) => _media.Add(medium);
+    public void AddMedium(ITgMediaGroupElement tgMedium) => _media.Add(tgMedium);
 
     public override async Task Render(TgRenderContext context, CancellationToken token)
     {

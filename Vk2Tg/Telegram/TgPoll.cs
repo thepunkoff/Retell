@@ -1,7 +1,8 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
+using Vk2Tg.Elements;
 
-namespace Vk2Tg.Elements;
+namespace Vk2Tg.Telegram;
 
 public class TgPoll : TgElement
 {

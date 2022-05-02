@@ -1,8 +1,8 @@
 ﻿using Vk2Tg.Core.Models;
 
-namespace Vk2Tg.Elements;
+namespace Vk2Tg.Telegram;
 
-public interface IMediaGroupElement
+public interface ITgMediaGroupElement
 {
     Uri Url { get; }
 

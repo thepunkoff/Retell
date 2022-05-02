@@ -1,8 +1,10 @@
-﻿namespace Vk2Tg.Elements;
+﻿using Vk2Tg.Elements;
+
+namespace Vk2Tg.Telegram;
 
 /// <summary>
 /// Compound element consists of elements that can't be merged together.
-/// It's always ONE element that can be merged with something and AT LEAST ONE element that can't be merged with anything.  
+/// It's always ONE element that can be merged with something and AT LEAST ONE element that can't be merged with anything.
 /// </summary>
 public class TgCompoundElement : TgElement
 {

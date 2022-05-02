@@ -1,9 +1,11 @@
-﻿namespace Vk2Tg.Elements;
+﻿using Vk2Tg.Elements;
+
+namespace Vk2Tg.Telegram;
 
 public abstract class TgElement
 {
     public static GifMediaGroupMode MediaGroupMode = GifMediaGroupMode.Auto;
-    
+
     public TgElement AddElement(TgElement other)
     {
         return other switch
@@ -17,17 +19,17 @@ public abstract class TgElement
             _ => throw new NotSupportedException($"Element type '{other.GetType().FullName}' is not supported for merging.")
         };
     }
-    
+
     public abstract TgElement AddText(TgText text);
-    
+
     public abstract TgElement AddPhoto(TgPhoto photo);
-    
+
     public abstract TgElement AddVideo(TgVideo video);
-    
+
     public abstract TgElement AddPoll(TgPoll poll);
-    
+
     public abstract TgElement AddLink(TgLink link);
-    
+
     public abstract TgElement AddGif(TgGif gif);
 
     public abstract Task Render(TgRenderContext context, CancellationToken token);

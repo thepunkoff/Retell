@@ -1,8 +1,9 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InputFiles;
+using Vk2Tg.Elements;
 
-namespace Vk2Tg.Elements;
+namespace Vk2Tg.Telegram;
 
 // TODO: gif - расширение photo (или назвать как-то по другому то, что у них общее (всё, кроме способа получения ресурса))
 public class TgGif : TgElement
@@ -12,7 +13,7 @@ public class TgGif : TgElement
     public Uri Url { get; }
 
     public string? Caption { get; set; }
-    
+
     public TgGif(Uri url, string? caption = null, bool textUp = false)
     {
         Url = url;
@@ -29,7 +30,7 @@ public class TgGif : TgElement
     {
         if (photo.Caption is not null)
             throw new NotSupportedException("Adding non null caption when merging gif is not supported.");
-        
+
         if (Caption is null)
             return new TgCompoundElement(photo, this);
 
@@ -45,7 +46,7 @@ public class TgGif : TgElement
     {
         if (video.Caption is not null)
             throw new NotSupportedException("Adding non null caption when merging gif is not supported.");
-        
+
         if (Caption is null)
             return new TgCompoundElement(video, this);
 
@@ -71,7 +72,7 @@ public class TgGif : TgElement
     {
         if (gif.Caption is not null)
             throw new NotSupportedException("Adding non null caption when merging gif is not supported.");
-        
+
         if (Caption is null || MediaGroupMode is GifMediaGroupMode.TextUp)
             return new TgCompoundElement(this, gif);
 

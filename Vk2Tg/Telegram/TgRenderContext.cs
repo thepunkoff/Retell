@@ -1,7 +1,7 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace Vk2Tg.Elements;
+namespace Vk2Tg.Telegram;
 
 public class TgRenderContext
 {

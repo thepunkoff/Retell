@@ -2,10 +2,11 @@
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.InputFiles;
 using Vk2Tg.Core.Models;
+using Vk2Tg.Elements;
 
-namespace Vk2Tg.Elements;
+namespace Vk2Tg.Telegram;
 
-public class TgVideo : TgElement, IMediaGroupElement
+public class TgVideo : TgElement, ITgMediaGroupElement
 {
     private readonly bool _textUp;
 
@@ -28,12 +29,12 @@ public class TgVideo : TgElement, IMediaGroupElement
 
     public override TgElement AddPhoto(TgPhoto photo)
     {
-        return new TgMediaGroup(new[] { (IMediaGroupElement)this, photo }, _textUp);
+        return new TgMediaGroup(new[] { (ITgMediaGroupElement)this, photo }, _textUp);
     }
 
     public override TgElement AddVideo(TgVideo video)
     {
-        return new TgMediaGroup(new[] { (IMediaGroupElement)this, video }, _textUp);
+        return new TgMediaGroup(new[] { (ITgMediaGroupElement)this, video }, _textUp);
     }
 
     public override TgElement AddPoll(TgPoll poll)

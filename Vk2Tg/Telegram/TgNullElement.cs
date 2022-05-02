@@ -1,6 +1,7 @@
 ﻿using NLog;
+using Vk2Tg.Elements;
 
-namespace Vk2Tg.Elements;
+namespace Vk2Tg.Telegram;
 
 public class TgNullElement : TgElement
 {

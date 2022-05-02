@@ -7,6 +7,7 @@ using Vk2Tg.Configuration;
 using Vk2Tg.Elements;
 using Vk2Tg.Filtering;
 using Vk2Tg.Services;
+using Vk2Tg.Telegram;
 using VkNet.Abstractions;
 using VkNet.Enums.Filters;
 using VkNet.Exception;
@@ -84,7 +85,7 @@ public class BotService : BackgroundService
             }
         }
     }
-    
+
     private async Task ProcessGroupUpdate(GroupUpdate update)
     {
         if (update.WallPost is null)
@@ -168,7 +169,7 @@ public class BotService : BackgroundService
         _logger.LogDebug("TgElement created");
         return ret;
     }
-    
+
     private static Uri ChoseBestQualityUrl(Video video)
     {
         return video.Files switch
