@@ -1,6 +1,6 @@
 ﻿using Vk2Tg.Elements;
 
-namespace Vk2Tg.Models;
+namespace Vk2Tg.Core.Models;
 
 /// <summary>
 /// Domain model of a generic medium.

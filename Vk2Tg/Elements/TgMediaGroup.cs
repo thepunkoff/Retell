@@ -2,7 +2,7 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Vk2Tg.Models;
+using Vk2Tg.Core.Models;
 
 namespace Vk2Tg.Elements;
 

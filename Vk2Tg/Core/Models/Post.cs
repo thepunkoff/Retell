@@ -1,4 +1,4 @@
-﻿namespace Vk2Tg.Models;
+﻿namespace Vk2Tg.Core.Models;
 
 /// <summary>
 /// Domain model of a generic post.
@@ -8,12 +8,12 @@ public class Post
     /// <summary>
     /// Text content.
     /// </summary>
-    public string Text { get; set; }
+    public string Text { get; }
 
     /// <summary>
     /// Media attachments.
     /// </summary>
-    public Medium[] Media { get; set; }
+    public Medium[] Media { get; }
 
     /// <summary>
     /// Domain model of a generic post.

@@ -1,4 +1,4 @@
-﻿namespace Vk2Tg.Models;
+﻿namespace Vk2Tg.Core.Models;
 
 /// <summary>
 /// Medium type.
