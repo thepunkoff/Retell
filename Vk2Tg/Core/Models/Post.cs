@@ -13,14 +13,26 @@ public class Post
     /// <summary>
     /// Media attachments.
     /// </summary>
-    public Medium[] Media { get; }
+    public Medium[]? Media { get; }
+
+    /// <summary>
+    /// Poll.
+    /// </summary>
+    public Poll? Poll { get; }
+
+    /// <summary>
+    /// Link.
+    /// </summary>
+    public Uri[]? Links { get; }
 
     /// <summary>
     /// Domain model of a generic post.
     /// </summary>
-    public Post(string text, Medium[] media)
+    public Post(string text, Medium[]? media, Poll? poll, Uri[]? links)
     {
         Text = text;
         Media = media;
+        Poll = poll;
+        Links = links;
     }
 }

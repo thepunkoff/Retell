@@ -14,4 +14,9 @@ public enum MediumType
     /// Video.
     /// </summary>
     Video = 1,
+
+    /// <summary>
+    /// Gif.
+    /// </summary>
+    Gif = 2,
 }

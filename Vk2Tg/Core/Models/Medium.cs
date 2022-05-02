@@ -1,6 +1,4 @@
-﻿using Vk2Tg.Elements;
-
-namespace Vk2Tg.Core.Models;
+﻿namespace Vk2Tg.Core.Models;
 
 /// <summary>
 /// Domain model of a generic medium.
@@ -10,12 +8,12 @@ public class Medium
     /// <summary>
     /// Medium type.
     /// </summary>
-    public MediumType Type { get; set; }
+    public MediumType Type { get; }
 
     /// <summary>
     /// Medium uri.
     /// </summary>
-    public Uri Uri { get; set; }
+    public Uri Uri { get; }
 
     /// <summary>
     /// Domain model for a generic medium.

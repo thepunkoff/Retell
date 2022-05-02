@@ -5,11 +5,11 @@ namespace Vk2Tg.Telegram;
 
 public class TgRenderContext
 {
-    public readonly TelegramBotClient BotClient;
+    public readonly ITelegramBotClient BotClient;
     public readonly ChatId ChatId;
     public readonly HttpClient HttpClient;
 
-    public TgRenderContext(TelegramBotClient botClient, ChatId chatId, HttpClient httpClient)
+    public TgRenderContext(ITelegramBotClient botClient, ChatId chatId, HttpClient httpClient)
     {
         BotClient = botClient;
         ChatId = chatId;

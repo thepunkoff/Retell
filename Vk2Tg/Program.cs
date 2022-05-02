@@ -9,10 +9,12 @@ using Vk2Tg;
 using Vk2Tg.Abstractions.Services;
 using Vk2Tg.Admin;
 using Vk2Tg.Configuration;
+using Vk2Tg.Core;
 using Vk2Tg.Filtering;
-using Vk2Tg.Http;
 using Vk2Tg.Http.Handlers;
 using Vk2Tg.Services;
+using Vk2Tg.Telegram;
+using Vk2Tg.Vk;
 using VkNet;
 using VkNet.Abstractions;
 using VkNet.AudioBypassService.Extensions;
@@ -23,12 +25,12 @@ builder.ConfigureAppConfiguration(configurationBuilder =>
 {
     configurationBuilder.Sources.Clear();
     configurationBuilder.Properties.Clear();
-    
+
     var path = Path.Combine(Environment.CurrentDirectory, "config.yml");
-    
+
     if (!File.Exists(path))
         new Vk2TgConfig().Save();
-    
+
     configurationBuilder.AddYamlFile(path, false, true);
     configurationBuilder.AddEnvironmentVariables("Vk2Tg_");
 });
@@ -42,14 +44,7 @@ builder.ConfigureLogging(loggingBuilder =>
 
 builder.ConfigureServices(collection =>
 {
-    collection.AddSingleton<IVkApi>(new VkApi(collection));
-    collection.AddAudioBypass();
-    collection.AddSingleton<IVkUpdateSourceService, VkLongPollService>();
-    
-    collection.AddSingleton<ITelegramBotClient>(provider => new TelegramBotClient(
-        provider.GetRequiredService<IConfiguration>().Get<TgSecrets>().TelegramToken, 
-        provider.GetRequiredService<HttpClient>()));
-
+    // Common
     collection.AddSingleton(_ => new HttpClient
     {
         Timeout = TimeSpan.FromSeconds(100)
@@ -70,9 +65,39 @@ builder.ConfigureServices(collection =>
     collection.AddSingleton<VkPostFilterService>();
     collection.AddSingleton<SettingsHandlerService>();
 
+    // Platform specific
+    var serviceProvider = collection.BuildServiceProvider();
+    var configuration = serviceProvider.GetService<IConfiguration>();
+    var source = configuration.GetValue<Platform>("source");
+    var destination = configuration.GetValue<Platform>("destination");
+
+    if (source is Platform.Vk)
+    {
+        collection.AddSingleton<IVkApi>(new VkApi(collection));
+        collection.AddAudioBypass();
+        collection.AddSingleton<IPostSource, VkPostSource>();
+    }
+    else
+    {
+        throw new NotSupportedException("Only vk.com is supported as a source platform.");
+    }
+
+    if (destination is Platform.Telegram)
+    {
+        collection.AddSingleton<ITelegramBotClient>(provider => new TelegramBotClient(
+            provider.GetRequiredService<IConfiguration>().Get<TgSecrets>().TelegramToken,
+            provider.GetRequiredService<HttpClient>()));
+        collection.AddSingleton<IPostRenderer, TelegramPostRenderer>();
+    }
+    else
+    {
+        throw new NotSupportedException("Only Telegram is supported as a destination platform.");
+    }
+
+    // Services
     collection.AddHostedService<BotService>();
     collection.AddHostedService<AdminConsoleService>();
-    collection.AddHostedService<HttpServerService>();
+    // collection.AddHostedService<HttpServerService>();
 });
 
-await builder.Build().RunAsync(); 
+await builder.Build().RunAsync();
