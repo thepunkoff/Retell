@@ -77,7 +77,7 @@ public class TgGif : TgElement
             return new TgCompoundElement(this, gif);
 
         return Caption.Length <= 1024
-            ? new TgCompoundElement(new TgGif(Url), new TgPhoto(gif.Url, Caption))
+            ? new TgCompoundElement(new TgGif(Url), new TgGif(gif.Url, Caption))
             : new TgCompoundElement(this, gif);
     }
 
@@ -114,7 +114,7 @@ public class TgGif : TgElement
     public override string ToString()
     {
         if (Caption is null)
-            return "[Git]";
+            return "[Gif]";
 
         return _textUp
             ? "[Text with HTML gif]"

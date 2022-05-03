@@ -61,6 +61,6 @@ public class TgCompoundElement : TgElement
 
     public override string ToString()
     {
-        return $"[{{{_first}, {_first}}}]";
+        return $"[{{{_first}, {_second}}}]";
     }
 }
