@@ -34,17 +34,17 @@ public class TgCompoundElement : TgElement
 
     public override TgElement AddPoll(TgPoll poll)
     {
-        return new TgCompoundElement(_first.AddPoll(poll), _second);
+        return new TgCompoundElement(_first, _second.AddPoll(poll));
     }
 
     public override TgElement AddLink(TgLink link)
     {
-        return new TgCompoundElement(_first.AddLink(link), _second);
+        return new TgCompoundElement(_first, _second.AddLink(link));
     }
 
     public override TgElement AddGif(TgGif gif)
     {
-        return new TgCompoundElement(_first.AddGif(gif), _second);
+        return new TgCompoundElement(_first, _second.AddGif(gif));
     }
 
 
