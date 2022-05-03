@@ -265,7 +265,6 @@ public class Tests
     [Test]
     public void CombineWithGif()
     {
-        throw new Exception();
         // Two elements
         var photo1 = new TgPhoto(new Uri("http://localhost/image1.png"));
         var video1 = new TgVideo(new Uri("http://localhost/video1.mp4"));
