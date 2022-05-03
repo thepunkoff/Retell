@@ -1,14 +1,12 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using NLog;
 using Retell.Abstractions.Services;
 using Retell.Configuration;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types.Enums;
-using Retell.Services;
 
 namespace Retell.Admin;
 
@@ -22,8 +20,8 @@ public sealed class AdminConsoleService : BackgroundService
     private readonly List<long> _authorizedIds = new();
     private DateTime _lastMessageTimestamp = DateTime.MinValue;
 
-    public AdminConsoleService(ITelegramBotClient telegramBotClient, 
-        ILogger<AdminConsoleService> logger, 
+    public AdminConsoleService(ITelegramBotClient telegramBotClient,
+        ILogger<AdminConsoleService> logger,
         IExceptionReportService reportService,
         IConfiguration configuration)
     {
@@ -46,14 +44,14 @@ public sealed class AdminConsoleService : BackgroundService
             await _telegramBotClient.SendTextMessageAsync(userId, "Вы уже авторизованы.");
             return;
         }
-        
+
         if (password != _configuration.GetSection("adminPassword").Value)
         {
             _logger.LogInformation("Wrong password: {UserId}", userId);
             await _telegramBotClient.SendTextMessageAsync(userId, "Неверный пароль.");
             return;
         }
-        
+
         _authorizedIds.Add(userId);
         _logger.LogInformation("Successful authorization: {UserId}", userId);
         var logoutTimeMinutes = _configuration.GetSection("autoLogoutIdlePeriodMinutes").Get<int>();
@@ -80,15 +78,15 @@ public sealed class AdminConsoleService : BackgroundService
         catch (ApiRequestException ex)
         {
             if (ex.ErrorCode == 404)
-                _logger.LogError("Invalid telegram bot token");
+                _logger.LogError("Invalid telegram bot token or token not set.");
             throw;
         }
     }
-    
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await CheckApiAvailability(stoppingToken);
-        
+
         await foreach (var update in _updateReceiver.WithCancellation(stoppingToken))
         {
             if (_lastMessageTimestamp != DateTime.UtcNow &&
@@ -235,7 +233,7 @@ public sealed class AdminConsoleService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception occured in handler");
-                
+
                 await _telegramBotClient.SendTextMessageAsync(message.From.Id, $"Произошла ошибка. Сообщите о ней администратору.\n\nДетали:\n{ex}", cancellationToken: stoppingToken);
                 await _reportService.SendExceptionAsync(ex);
             }

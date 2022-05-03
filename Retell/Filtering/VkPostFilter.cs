@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.Configuration;
-using NLog;
-using Retell.Configuration;
 using VkNet.Model.GroupUpdate;
 
 namespace Retell.Filtering;

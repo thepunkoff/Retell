@@ -13,8 +13,6 @@ using VkNet.Model;
 using VkNet.Model.Attachments;
 using VkNet.Model.GroupUpdate;
 using VkNet.Model.RequestParams;
-using Poll = Retell.Core.Models.Poll;
-using Post = Retell.Core.Models.Post;
 
 namespace Retell.Vk;
 

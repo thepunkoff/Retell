@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using NLog;
 
 namespace Retell.Http.Handlers;
 

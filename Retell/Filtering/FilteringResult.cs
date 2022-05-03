@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-namespace Retell.Filtering;
+﻿namespace Retell.Filtering;
 
 public enum FilteringResult
 {

@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Retell.Core;
 using Retell.Core.Models;
 using Telegram.Bot;
-using Post = Retell.Core.Models.Post;
 
 namespace Retell.Telegram;
 
