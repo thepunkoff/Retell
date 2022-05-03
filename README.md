@@ -1,5 +1,11 @@
-# Vk2Tg
-This is a service for mapping and mirroring vk.com community posts to a telegram channel.
+# Retell
+This is a service for reposting community posts to other platforms.
+
+Currently supported sources:
+- vk.com
+
+Currently supported targets:
+- Telegram
 
 Features:
 1. Admin console: turn on/off, change settings

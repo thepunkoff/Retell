@@ -1,14 +1,14 @@
 version: 2.4
 
 services:
-  vk2tg:
+  retell:
     build:
       dockerfile: Dockerfile
     restart: on-failure
     environment:
-      Vk2Tg_TelegramToken: token
-      Vk2Tg_TelegramChatId: 0
-      Vk2Tg_GmailEmail: example@gmail.com
-      Vk2Tg_GmailPassword: password
-      Vk2Tg_VkToken: token
-      Vk2Tg_VkGroupId: 0
+      Retell_TelegramToken: token
+      Retell_TelegramChatId: 0
+      Retell_GmailEmail: example@gmail.com
+      Retell_GmailPassword: password
+      Retell_VkToken: token
+      Retell_VkGroupId: 0
