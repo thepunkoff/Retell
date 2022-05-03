@@ -1,6 +1,8 @@
 # Retell
 This is a service for reposting community posts to other platforms.
 
+![badge](https://github.com/thepunkoff/Retell/actions/workflows/build.yml/badge.svg)
+
 Currently supported sources:
 - vk.com
 
