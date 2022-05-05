@@ -1,7 +1,0 @@
-﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=3b467ec3_002D8a44_002D4af1_002Db72a_002Dbd5527a1cc85/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Text #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;ProjectFile&gt;61BC03BC-0B0E-4137-A4EB-03C9F5D31FE7/f:RenderingTests.cs&lt;/ProjectFile&gt;&#xD;
-&lt;/SessionState&gt;</s:String>
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=9f523281_002D7c10_002D4843_002Dadbe_002D38ff8bd0a096/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Text" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
-  &lt;ProjectFile&gt;61BC03BC-0B0E-4137-A4EB-03C9F5D31FE7/f:RenderingTests.cs&lt;/ProjectFile&gt;&#xD;
-&lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>
