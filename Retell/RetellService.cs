@@ -5,13 +5,13 @@ using Retell.Core;
 
 namespace Retell;
 
-public class BotService : BackgroundService
+public class RetellService : BackgroundService
 {
-    private readonly ILogger<BotService> _logger;
+    private readonly ILogger<RetellService> _logger;
     private readonly IPostSource _source;
     private readonly IPostRenderer _renderer;
     private readonly IExceptionReportService _reportService;
-    public BotService(ILogger<BotService> logger, IPostSource source, IPostRenderer renderer, IExceptionReportService reportService)
+    public RetellService(ILogger<RetellService> logger, IPostSource source, IPostRenderer renderer, IExceptionReportService reportService)
     {
         _logger = logger;
         _source = source;

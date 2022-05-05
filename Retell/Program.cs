@@ -94,7 +94,7 @@ builder.ConfigureServices(collection =>
     }
 
     // Services
-    collection.AddHostedService<BotService>();
+    collection.AddHostedService<RetellService>();
     collection.AddHostedService<AdminConsoleService>();
     // collection.AddHostedService<HttpServerService>();
 });
