@@ -28,7 +28,7 @@ public class TelegramPostRenderer : IPostRenderer
     }
 
     /// <inheritdoc />
-    public async Task Render(Core.Models.Post post, CancellationToken token)
+    public async Task RenderAsync(Core.Models.Post post, CancellationToken token)
     {
         var element = CreateTgElement(post);
         await element.Render(new TgRenderContext(_telegramBotClient, _chatId, _httpClient), token);

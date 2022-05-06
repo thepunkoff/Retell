@@ -27,7 +27,7 @@ public class RetellService : BackgroundService
             try
             {
                 await foreach (var post in _source.GetPosts(token))
-                    await _renderer.Render(post, token);
+                    await _renderer.RenderAsync(post, token);
             }
             catch (Exception e)
             {
