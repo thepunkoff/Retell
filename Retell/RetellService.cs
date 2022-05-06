@@ -8,14 +8,17 @@ namespace Retell;
 public class RetellService : BackgroundService
 {
     private readonly ILogger<RetellService> _logger;
-    private readonly IPostSource _source;
-    private readonly IPostRenderer _renderer;
+    private readonly IEnumerable<IPostSource> _sources;
+    private readonly IEnumerable<IPostRenderer> _renderers;
     private readonly IExceptionReportService _reportService;
-    public RetellService(ILogger<RetellService> logger, IPostSource source, IPostRenderer renderer, IExceptionReportService reportService)
+    public RetellService(ILogger<RetellService> logger, 
+        IEnumerable<IPostSource> sources, 
+        IEnumerable<IPostRenderer> renderers,
+        IExceptionReportService reportService)
     {
         _logger = logger;
-        _source = source;
-        _renderer = renderer;
+        _sources = sources;
+        _renderers = renderers;
         _reportService = reportService;
     }
 
@@ -26,8 +29,12 @@ public class RetellService : BackgroundService
         {
             try
             {
-                await foreach (var post in _source.GetPosts(token))
-                    await _renderer.RenderAsync(post, token);
+                await foreach (var post in _sources.Select(source => source.GetPosts(token))
+                                   .Merge()
+                                   .WithCancellation(token))
+                {
+                    await Task.WhenAll(_renderers.Select(renderer => renderer.RenderAsync(post, token)));
+                }
             }
             catch (Exception e)
             {
