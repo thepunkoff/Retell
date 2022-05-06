@@ -1,17 +1,18 @@
 ﻿using Microsoft.Extensions.Configuration;
-using VkNet.Model.GroupUpdate;
+using Retell.Abstractions.Services;
+using Retell.Core.Models;
 
 namespace Retell.Filtering;
 
-public class VkPostFilterService
+public class PostFilteringService : IPostFilteringService
 {
     private readonly IConfiguration _configuration;
-    public VkPostFilterService(IConfiguration configuration)
+    public PostFilteringService(IConfiguration configuration)
     {
         _configuration = configuration;
     }
 
-    public FilteringResult Filter(WallPost vkWallPost)
+    public FilteringResult Filter(Post post)
     {
         if (!_configuration.GetSection("isBotEnabled").Get<bool>())
             return FilteringResult.BotDisabled;
@@ -21,9 +22,9 @@ public class VkPostFilterService
 
         string? textLowercase = null;
         var signalWordFound = signalWordsSection.Get<string[]>().FirstOrDefault(x => _configuration.GetSection("ignoreSignalWordsCase").Get<bool>()
-            ? (textLowercase ??= vkWallPost.Text.ToLowerInvariant()).Contains(x)
-            : vkWallPost.Text.Contains(x))
-        ?? (vkWallPost.Text.StartsWith(" ")
+            ? (textLowercase ??= post.Text.ToLowerInvariant()).Contains(x)
+            : post.Text.Contains(x))
+        ?? (post.Text.StartsWith(" ")
             ? "Unprinted symbol at the beginning of the text"
             : null);
 
