@@ -61,7 +61,7 @@ builder.ConfigureServices(collection =>
     });
 #endif
 
-    collection.AddSingleton<VkPostFilterService>();
+    collection.AddSingleton<IPostFilteringService, PostFilteringService>();
     collection.AddSingleton<SettingsHandlerService>();
 
     // Platform specific
