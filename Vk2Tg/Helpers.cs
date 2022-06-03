@@ -2,6 +2,7 @@
 using NLog;
 using Polly;
 using Telegram.Bot.Exceptions;
+using VkNet.Exception;
 
 namespace Vk2Tg;
 
@@ -14,8 +15,8 @@ public static class Helpers
     private static readonly string VkLink = new (@"\[([^\]]+)\|([^\]]+)\]");
     
     public static readonly AsyncPolicy TelegramRetryForeverPolicy = Policy
-        .Handle<Exception>(ex => ex is RequestException && ex.Message.ToLower().Contains("time") && ex.Message.ToLower().Contains("out"))
-        .RetryForeverAsync(_ => Logger.Warn("Timeout. Retrying..."));
+        .Handle<Exception>(ex => ex is GroupKeyInvalidException || (ex is RequestException && ex.Message.ToLower().Contains("time") && ex.Message.ToLower().Contains("out")))
+        .RetryForeverAsync(ex => Logger.Warn(ex is GroupKeyInvalidException ? "GroupKeyInvalidException. Retrying..." : "Timeout. Retrying..."));
 
     public static bool TryTransformLinksVkToTelegram(string text, out string result)
     {
